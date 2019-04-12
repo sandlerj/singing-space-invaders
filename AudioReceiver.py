@@ -1,3 +1,5 @@
+## This should all get turned into an object
+
 import pyaudio, aubio, numpy
 import os
 
