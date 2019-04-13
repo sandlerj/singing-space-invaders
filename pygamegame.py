@@ -34,7 +34,7 @@ class PygameGame(object):
         pass
 
     def redrawAll(self, screen):
-        pass
+        pygame.display.flip()
 
     def isKeyPressed(self, key):
         ''' return whether a specific key is being held '''
@@ -85,7 +85,6 @@ class PygameGame(object):
                     playing = False
             screen.fill(self.bgColor)
             self.redrawAll(screen)
-            pygame.display.flip()
 
         pygame.quit()
 

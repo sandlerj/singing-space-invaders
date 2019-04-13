@@ -6,12 +6,12 @@ import pygame, os
 
 class Ship(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        super().__init__(self)
+        super().__init__()
         self.x = x
         self.y = y
         self.image = pygame.image.load(os.path.join("Photos", "ship.png"))
         self.image = self.image.convert_alpha()
-        self.width, self.height self.image.get_size()
+        self.width, self.height = self.image.get_size()
         self.rect = self.image.get_rect()
         self.updateRect()
         self.dx = 0
