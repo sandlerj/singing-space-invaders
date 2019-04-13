@@ -6,11 +6,15 @@ from Ship import Ship
 class PerfectPitchSpaceInvaders(PygameGame): 
 
     def init(self):
-        ship = Ship(self.width//2, self.height//2)
+        Ship.init(self.width,self.height)
+        ship = Ship(self.width//2, self.height-Ship.image.get_height())
         # Using RenderUpdates subgroup of class for dirty rect blitting
         self.shipGroup = pygame.sprite.RenderUpdates(ship)
         self.bulletGroup = pygame.sprite.RenderUpdates()
         self.dirtyRects = []
+        self.background = pygame.Surface((self.width,self.height))
+        self.bgColor = (0,0,0)
+        self.background.fill(self.bgColor)
 
     def timerFired(self, dt):
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
@@ -24,6 +28,7 @@ class PerfectPitchSpaceInvaders(PygameGame):
 
     def redrawAll(self, screen):
         # drawing members of RenderUpdates groups to screen - outputs
+        screen.blit(self.background, (0,0))
         self.dirtyRects.extend(self.shipGroup.draw(screen))
         self.dirtyRects.extend(self.bulletGroup.draw(screen))
         #update only the dirty rects

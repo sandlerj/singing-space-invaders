@@ -5,12 +5,20 @@
 import pygame, os
 
 class Ship(pygame.sprite.Sprite):
+    @staticmethod
+    def init(screenWidth, screenHeight):
+        Ship.image = pygame.image.load(os.path.join("Photos",
+                                                 "ship.png")).convert_alpha()
+        widthHeightRatio = Ship.image.get_width() / Ship.image.get_height()
+        Ship.image = pygame.transform.scale(Ship.image,
+                    (screenWidth//15, int(screenWidth//15*widthHeightRatio)))
+
+
     def __init__(self, x, y):
         super().__init__()
         self.x = x
         self.y = y
-        self.image = pygame.image.load(os.path.join("Photos", "ship.png"))
-        self.image = self.image.convert_alpha()
+        self.image = Ship.image
         self.width, self.height = self.image.get_size()
         self.rect = self.image.get_rect()
         self.updateRect()

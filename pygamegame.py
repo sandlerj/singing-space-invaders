@@ -40,12 +40,15 @@ class PygameGame(object):
         ''' return whether a specific key is being held '''
         return self._keys.get(key, False)
 
-    def __init__(self, width=600, height=400, fps=50, title="112 Pygame Game"):
+    def __init__(self, width=600, height=400, fps=30, title="112 Pygame Game"):
         self.width = width
         self.height = height
         self.fps = fps
         self.title = title
         self.bgColor = (255, 255, 255)
+        #added for first blit (see run)
+        self.background = pygame.Surface((self.width,self.height))
+        self.background.fill(self.bgColor)
         pygame.init()
 
     def run(self):
@@ -60,6 +63,11 @@ class PygameGame(object):
 
         # call game-specific initialization
         self.init()
+
+        # Draw screen first time
+        screen.blit(self.background, (0,0))
+        pygame.display.flip()
+
         playing = True
         while playing:
             time = clock.tick(self.fps)
