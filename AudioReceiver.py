@@ -19,28 +19,6 @@ def pitchDetectionInit():
 
 
 
-def callback(in_data, frame_count, time_info, status_flags):
-    #Callback function for  pyAudio stream
-    pitchDetectionObject = pitchDetectionInit()
-
-    # Convert pyaudio data into array readable by aubio.
-    # *** Not copied exactly, but made with reference to:
-    # https://github.com/aubio/aubio/tree/master/python/demos/demo_pyaudio.py
-    dataAubio = numpy.frombuffer(in_data, dtype=numpy.float32)
-
-    # Get pitch as midi val by passing in data (returns list of one item)
-    pitchVal = pitchDetectionObject(dataAubio)[0]
-
-    note = (aubio.midi2note(int(numpy.around(pitchVal))))
-    print(type(note))
-
-    # Convert Midi val to note
-    checkNote(note, data)
-
-    return (in_data, pyaudio.paContinue)
-
-
-
 def checkNote(note, data):
     if note not in data.notes:
         print(note)
