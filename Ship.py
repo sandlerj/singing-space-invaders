@@ -7,11 +7,18 @@ import pygame, os
 class Ship(pygame.sprite.Sprite):
     @staticmethod
     def init(screenWidth, screenHeight):
+        #loads ship and scales to screen
+        # Ship image from https://www.kisspng.com/
+        #   png-galaga-galaxian-golden-age-of-arcade-video-games-a-1052746/
+        #   download-png.html
         Ship.image = pygame.image.load(os.path.join("Photos",
                                                  "ship.png")).convert_alpha()
         widthHeightRatio = Ship.image.get_width() / Ship.image.get_height()
+
+        scaleFactor = 15 
         Ship.image = pygame.transform.scale(Ship.image,
-                    (screenWidth//15, int(screenWidth//15*widthHeightRatio)))
+                    (int(screenWidth//scaleFactor * widthHeightRatio),
+                        screenWidth//scaleFactor))
 
 
     def __init__(self, x, y):
@@ -40,4 +47,6 @@ class Ship(pygame.sprite.Sprite):
             self.dx = 0
 
         self.x += self.speed * self.dx
+        if self.x + self.width//2 >= screenWidth or self.x - self.width//2 <= 0:
+            self.x -= self.speed * self.dx
         self.updateRect()

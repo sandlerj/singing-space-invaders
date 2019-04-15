@@ -10,7 +10,7 @@ class PitchDetectionObject(object):
         self.sampleRate = 44100
         self.sampleSize = 1024
         self.tolerance = 0.8 #Tolerance for pitch detection
-
+        self.note = ''
 
         self.p = pyaudio.PyAudio()
 
@@ -57,7 +57,7 @@ class PitchDetectionObject(object):
     def kill(self):
         # Terminates PyAudio instance
         self.p.terminate()
-        self.note = None
+        self.note = ''
 
     def getPitch(self):
-        return self.note
+        return self.note[:-1]
