@@ -49,17 +49,17 @@ class PitchBullet(Bullet):
 
 def colorByNote(note):
     # Determine color based on pitch class
-    listOfColors = [(255, 0, 0), #red
-                    (255, 127, 0), #orange
-                    (255, 255, 0), #yellow
-                    (127, 255,0), #chartreuse
-                    (0, 255, 0), #green
-                    (0, 255, 127), #light green
-                    (0, 255, 255), #cyan
-                    (0, 127, 255), #lighter blue
-                    (0, 0, 255), #blue
-                    (75, 0, 130), #indigo
-                    (148, 0, 211), #violet
-                    (255, 0, 255) #fuschia
+    listOfColors = [(255, 0, 0),    # C  red       
+                    (255, 127, 0),  # C# orange
+                    (255, 255, 0),  # D  yellow
+                    (127, 255,0),   # D# chartreuse
+                    (0, 255, 0),    # E  green
+                    (0, 255, 127),  # F  light green
+                    (0, 255, 255),  # F# cyan
+                    (0, 127, 255),  # G  lighter blue
+                    (0, 0, 255),    # G# blue
+                    (75, 0, 130),   # A  indigo
+                    (148, 0, 211),  # A# violet
+                    (255, 0, 255)   # B  fuschia
                     ]
     return listOfColors[note] #return color based on index
