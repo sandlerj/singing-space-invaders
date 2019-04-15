@@ -1,4 +1,7 @@
-## This should all get turned into an object
+"""
+No longer needed but saved for reference. Converted entirely into object. See
+PitchDetectionObject.py
+"""
 
 import pyaudio, aubio, numpy
 import os
