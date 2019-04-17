@@ -3,6 +3,7 @@ pygamegame.py
 created by Lukas Peraza
  for 15-112 F15 Pygame Optional Lecture, 11/11/15
 use this code in your term project if you want
+https://qwewy.gitbooks.io/pygame-module-manual/chapter1/framework.html
 '''
 import pygame
 

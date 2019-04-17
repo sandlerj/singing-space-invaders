@@ -1,3 +1,4 @@
+#Joseph Sandler, jsandler, Section B
 import pyaudio, aubio, numpy, os
 """
 Pitch detection object set up using pyaudio for an input stream via callback
@@ -24,7 +25,7 @@ class PitchDetectionObject(object):
 
     def openStream(self):
         # Open pyaudio stream as callback
-        print("Opening callback stream...")
+        # print("Opening callback stream...")
         self.stream = self.p.open(format=self.pyaudioStreamFormat,
             channels=self.paChannels,
             rate=self.sampleRate,
@@ -62,7 +63,7 @@ class PitchDetectionObject(object):
 
     def closeStream(self):
         #closes stream
-        print("Closing stream...")
+        # print("Closing stream...")
         self.stream.close()
 
     def kill(self):
@@ -75,7 +76,16 @@ class PitchDetectionObject(object):
         # Return midi value of current sung pitch
         return self.note
 
-    def pitchInRange(self, lowerBound, upperBound):
+    def pitchInRange(self, lowerBound, upperBound, scale=None):
         # Checks if current pitch is within a certain range of pitches
-        # All as midiVals
+        # All as midiVals. Also checks optionally if pitch is in given musical 
+        # scale given as list of midi vals
+
+        twelveToneScaleLen = 12
+
+        if scale != None:
+            #only do this if a scale is given
+            if self.note % twelveToneScaleLen not in scale:
+                #must mod midival by 12 to get pitch without octave
+                return False
         return lowerBound <= self.note <= upperBound

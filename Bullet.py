@@ -1,4 +1,7 @@
+#Joseph Sandler, jsandler, Section B
+
 import pygame, os, copy
+#Bullet sprite and subclasee PitchBullet
 
 class Bullet(pygame.sprite.Sprite):
     # Bullet base class, used by aliens and subclass used by ship
@@ -43,23 +46,26 @@ class PitchBullet(Bullet):
     def __init__(self, x, y, vector, note):
         #takes pitch as midi val
         super().__init__(x,y,vector)
-        self.note = note % 12 #storing note as pitch class ranging 0 - 11,
-        # where 0 is C and 11 is B
+        twelveToneScaleLen = 12
+        self.note = note % twelveToneScaleLen #storing note as pitch w/o octave, 
+        # ranging 0 - 11, where 0 is C and 11 is B
         self.image.fill((colorByNote(self.note)))
 
 def colorByNote(note):
-    # Determine color based on pitch class
-    listOfColors = [(255, 0, 0),    # C  red       
-                    (255, 127, 0),  # C# orange
-                    (255, 255, 0),  # D  yellow
-                    (127, 255,0),   # D# chartreuse
-                    (0, 255, 0),    # E  green
-                    (0, 255, 127),  # F  light green
-                    (0, 255, 255),  # F# cyan
+    # Determine color based on pitch class. White color pitches included for
+    # proper indexing into list by valid notes using actual midi val mod 11,
+    # as game currently only uses C major scale
+    listOfColors = [(255, 0, 0),    # C  red
+                    (255,255,255),  # C# white (unused)       
+                    (255, 127, 0),  # D orange
+                    (255,255,255),  # D# white (unused)
+                    (255, 255, 0),  # E  yellow
+                    (0, 255, 0),    # F  green
+                    (255,255,255),  # F# white (unused)
                     (0, 127, 255),  # G  lighter blue
-                    (0, 0, 255),    # G# blue
+                    (255,255,255),  # G# white (unused)
                     (75, 0, 130),   # A  indigo
-                    (148, 0, 211),  # A# violet
+                    (255,255,255),  # A# white (unused)
                     (255, 0, 255)   # B  fuschia
                     ]
     return listOfColors[note] #return color based on index

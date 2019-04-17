@@ -1,11 +1,18 @@
+#Joseph Sandler, jsandler, Section B
+# TP1 Deliverable
+
+# Primary game object containing run method.
+# Use PerfectPitchSpaceInvaders().run() to run
+
 import pygame, aubio
 from pygamegame import PygameGame
 from Ship import Ship
 from Bullet import *
 from PitchDetectionObject import PitchDetectionObject
 # PygameGame superclass from Lukas Peraza's optional lecture on Pygame
+# https://qwewy.gitbooks.io/pygame-module-manual/chapter1/framework.html
 
-class PerfectPitchSpaceInvaders(PygameGame): 
+class SingingSpaceInvaders(PygameGame): 
 
     def __init__(self, width=700, height=850, fps=30,
                                                     title="Space Invaders 112"):
@@ -38,6 +45,8 @@ class PerfectPitchSpaceInvaders(PygameGame):
         # Bounds for checking if pitch is in certain range using
         self.lowBound = 48 #midi val for C3
         self.highBound = 72 #midi val for C5
+        self.midiScale = [0, 2, 4, 5, 7, 9, 11] # C Major scale in midi vals
+        # Notes modulo 11:C  D  E  F  G  A  B
 
     def timerFired(self, dt):
         # Ship moved in timer fired for steady movement based on held keys
@@ -51,7 +60,8 @@ class PerfectPitchSpaceInvaders(PygameGame):
         bulletCoolDown = 500 #miliseconds
         if self.bulletTimer > bulletCoolDown: 
             # Check if current sung pitch is in range
-            if self.pitchObject.pitchInRange(self.lowBound, self.highBound):
+            if self.pitchObject.pitchInRange(self.lowBound, self.highBound,
+                scale = self.midiScale):
                 # If so, fire new bullet
                 self.firePitchBullet(self.pitchObject.getNote())
                 #reset cool down timer
