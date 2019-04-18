@@ -8,9 +8,10 @@ class Bullet(pygame.sprite.Sprite):
     @staticmethod
     def init(screenWidth, screenHeight):
         #initialize bullet image
-        Bullet.width = screenWidth//50
-        Bullet.height = screenWidth//50 * 3
-        Bullet.image = pygame.Surface((Bullet.width,Bullet.height))
+        Bullet.width = screenWidth//100
+        heightWidthRatio = 3
+        Bullet.image = pygame.Surface((Bullet.width,
+                                        Bullet.width * heightWidthRatio))
         Bullet.image.fill((255,255,255))
 
 
