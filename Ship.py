@@ -10,8 +10,9 @@ import pygame, os
 class Ship(pygame.sprite.Sprite):
     # Player ship class from pygame sprite
     @staticmethod
-    def init(screenWidth, screenHeight):
+    def init(screenWidth, screenHeight, scaleFactor=15):
         #loads ship and scales to screen
+        # Scale factor determines size based on width
         # Ship image from https://www.kisspng.com/
         #   png-galaga-galaxian-golden-age-of-arcade-video-games-a-1052746/
         #   download-png.html
@@ -21,7 +22,6 @@ class Ship(pygame.sprite.Sprite):
         # but maintain aspect ratio
         widthHeightRatio = Ship.image.get_width() / Ship.image.get_height()
 
-        scaleFactor = 15 #scale ship to 1/15 of screen width
         Ship.image = pygame.transform.scale(Ship.image,
                     (int(screenWidth//scaleFactor * widthHeightRatio),
                         screenWidth//scaleFactor))
