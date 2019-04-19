@@ -4,7 +4,7 @@
 # Primary game object containing run method.
 # Use PerfectPitchSpaceInvaders().run() to run
 
-import pygame, aubio
+import pygame, aubio, random
 from pygamegame import PygameGame
 from Ship import Ship
 from Bullet import *
@@ -25,7 +25,7 @@ class SingingSpaceInvaders(PygameGame):
         ship = Ship(self.width//2, self.height-Ship.image.get_height())
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
-        self.alienScaleFactor = 30 # alienWidth = screenWidth/scaleFactor
+        self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
 
         # Using RenderUpdates subgroup of class for dirty rect blitting
@@ -44,7 +44,14 @@ class SingingSpaceInvaders(PygameGame):
         self.pitchObject = PitchDetectionObject()
 
         # Will store time between bullet fires
-        self.bulletTimer = 0
+        self.bulletCoolDownTimer = 0
+
+        # Alien move stufdfsfhsdfdjfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd
+        self.alienStepTimer = 0
+        self.alienMoveWaitTime = 500
+        self.alienSpeedIncreaseFactor = 0.95
+        self.alienVector = (1,0)
+
 
         # Bounds for checking if pitch is in certain range using
         self.lowBound = 48 #midi val for C3
@@ -59,21 +66,37 @@ class SingingSpaceInvaders(PygameGame):
         #move bullets
         self.pitchBulletGroup.update(self.width, self.height)
 
-        self.bulletTimer += dt
-        #only fire a bullet at most every half second
-        bulletCoolDown = 500 #miliseconds
-        if self.bulletTimer > bulletCoolDown: 
+        self.bulletCoolDownTimer += dt
+
+        #only fire a bullet at most every...
+        bulletCoolDown = 100 #miliseconds
+        if self.bulletCoolDownTimer > bulletCoolDown: 
             # Check if current sung pitch is in range
             if self.pitchObject.pitchInRange(self.lowBound, self.highBound,
                 scale = self.midiScale):
                 # If so, fire new bullet
                 self.firePitchBullet(self.pitchObject.getNote())
                 #reset cool down timer
-                self.bulletTimer = 0
+                self.bulletCoolDownTimer = 0
+
+        if len(self.alienGroup)  > 0:
+            self.alienStepTimer += dt
+
+            if self.alienStepTimer >= self.alienMoveWaitTime:
+                # determine direction aliens should move
+                newVector = self.getAlienVector(self.alienVector,
+                                                        Alien.moveStepSizeX)
+                self.alienVector = newVector
+                self.alienGroup.update(self.alienVector)
+                self.alienStepTimer = 0
+                if self.alienVector == (0, 1):
+                    self.alienMoveWaitTime *= self.alienSpeedIncreaseFactor
+
+
 
     def keyPressed(self, keyCode, modifier):
         if keyCode == pygame.K_SPACE:
-            self.populateWithAliens()
+            self.populateWithAliens(rand=True)
 
     def firePitchBullet(self, midiVal):
         # Given midi val
@@ -100,21 +123,69 @@ class SingingSpaceInvaders(PygameGame):
         # object to close stream and terminate pyaudio.
         self.pitchObject.kill()
 
+    def getLeftmostAlien(self):
+        #return left side of left-most alien rect
+        currentLeftest = self.width #init at furthest right possible
+        for alien in self.alienGroup:
+            alienLeft = (alien.x - alien.width//2)
+            if alienLeft < currentLeftest:
+                currentLeftest = alienLeft
+        return currentLeftest
 
-    def populateWithAliens(self):
-        bufferX = Alien.width
-        bufferY = Alien.height
+    def getRightmostAlien(self):
+        #return right side of right-most alien rect
+        currentRightest = 0 #init at furthest left possible
+        for alien in self.alienGroup:
+            alienRight = (alien.x + alien.width//2)
+            if alienRight > currentRightest:
+                currentRightest = alienRight
+        return currentRightest
+
+    def getAlienVector(self, currentVector, stepSize):
+        #determine direction that alien group should move based on remaining
+        #alien positions and previous direction
+        leftBound = self.getLeftmostAlien()
+        rightBound = self.getRightmostAlien()
+        if currentVector == (1,0):
+            #if moving right, check if continuing in direction stays on screen,
+            # else, move down
+            if rightBound + Alien.moveStepSizeX < self.width:
+                return (1,0)
+            else:
+                return (0,1)
+        elif currentVector == (-1,0):
+            # if going left, check if continuing in direction stays on screen,
+            # else, move down
+            if leftBound - Alien.moveStepSizeX > 0:
+                return (-1,0)
+            else:
+                return (0,1)
+        elif currentVector == (0,1):
+            # if just went down, check left side and go that way if possible,
+            # otherwise go right
+            if leftBound - Alien.moveStepSizeX > 0:
+                return (-1,0)
+            else:
+                return (1,0)
 
 
-        """
-        iterScale = iter(self.midiScale)
-        for cx in range(bufferX, self.width//3*2, Alien.width + bufferX):
-            try:
-                note = next(iterScale)
-            except: break
-            for cy in range(bufferY, self.height//3, Alien.height + bufferY):
-                self.alienGroup.add(Alien(cx,cy,note))
-        """
+    def populateWithAliens(self, rand=False):
+        topBuffer = Alien.height//2
+        numCols = 10
+        numRows = 7
+        notes = iter(self.midiScale)
+        #nested forloop drawing aliens with buffer
+        for cy in range(Alien.bufferY + topBuffer, 
+            topBuffer + (Alien.stepSizeY) * numRows + 1, Alien.stepSizeY):
+            if not rand:
+                #alien generation not random
+                note = next(notes)
+            for cx in range(Alien.bufferX, (Alien.stepSizeX) * numCols + 1,
+                Alien.stepSizeX):
+                if rand:
+                    note = random.choice(self.midiScale)
+                self.alienGroup.add(Alien(cx,cy, note))
+
 
 if __name__ == "__main__":
     SingingSpaceInvaders().run()

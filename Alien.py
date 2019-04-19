@@ -14,11 +14,38 @@ class Alien(pygame.sprite.Sprite):
     def init(screenWidth, screenHeight, scaleFactor=30):
         #Load and scale all of the alien images once
         Alien.alienImages = {}
+        # set standard alien height, and a base width which will be changed for
+        # each alien based on aspect ratio of original image
         Alien.width = Alien.height = screenWidth//scaleFactor
         for img in os.listdir(os.path.join("Photos", "Aliens")):
             tmpImage = pygame.image.load(os.path.join("Photos", "Aliens", img))
+            widthHeightRatio = tmpImage.get_width()/tmpImage.get_height()
             Alien.alienImages[img] = pygame.transform.scale(tmpImage,
-                (Alien.width, Alien.height))
+                (int(Alien.width * widthHeightRatio), Alien.height))
+
+        #Assign least alien width to Alien.widthLeast for drawing evenly
+        #   on screen
+        Alien.widthLeast = Alien.leastImageWidth(Alien.alienImages)
+        Alien.bufferX = Alien.widthLeast * 2
+        Alien.bufferY = Alien.height
+        # Alien.stepSize* attributes are for placing on screen initially
+        Alien.stepSizeX = Alien.bufferX + Alien.widthLeast
+        Alien.stepSizeY = Alien.bufferY + Alien.height
+        
+        # for actual distance of move across screen (currently same, may change)
+        Alien.moveStepSizeX = Alien.stepSizeX
+
+    @staticmethod
+    def leastImageWidth(imgDict):
+        #returns width of least wide image in dictionary values
+        currentBest = -1
+        for img in list(imgDict.values()):
+            if currentBest < 0:
+                currentBest = img.get_width()
+            elif img.get_width() < currentBest:
+                currentBest = img.get_width()
+        return currentBest
+
     @staticmethod
     def getImageFromNote(note):
         # Returns proper image for alien based on note of C major scale as midi
@@ -48,3 +75,8 @@ class Alien(pygame.sprite.Sprite):
         # Updates sprite rect for blit
         self.rect = pygame.Rect(self.x - self.width//2, self.y - self.height//2,
                                 self.x + self.width//2, self.y + self.height//2)
+
+    def update(self, vector):
+        self.x += Alien.stepSizeX * vector[0]
+        self.y += Alien.stepSizeY * vector[1]
+        self.updateRect()
