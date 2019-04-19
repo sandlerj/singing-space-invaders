@@ -48,7 +48,7 @@ class SingingSpaceInvaders(PygameGame):
 
         # Alien move stufdfsfhsdfdjfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd
         self.alienStepTimer = 0
-        self.alienMoveWaitTime = 500
+        self.alienMoveWaitTime = 1000
         self.alienSpeedIncreaseFactor = 0.95
         self.alienVector = (1,0)
 
@@ -65,6 +65,10 @@ class SingingSpaceInvaders(PygameGame):
 
         #move bullets
         self.pitchBulletGroup.update(self.width, self.height)
+
+        self.bulletAlienCollisions()
+
+
 
         self.bulletCoolDownTimer += dt
 
@@ -91,6 +95,23 @@ class SingingSpaceInvaders(PygameGame):
                 self.alienStepTimer = 0
                 if self.alienVector == (0, 1):
                     self.alienMoveWaitTime *= self.alienSpeedIncreaseFactor
+
+    def bulletAlienCollisions(self):
+        # Checks if bullets are colliding with aliens and if so removes bullets
+        # from all groups. In same iteration, checks if bullet was correct hit
+        # for given alien, and if so, removes alien from all groups as well.
+        correctHitAliens = []
+        hitBullets = []
+        for bullet in self.pitchBulletGroup:
+            for alien in self.alienGroup:
+                if pygame.sprite.collide_rect(bullet, alien):
+                    hitBullets.append(bullet)
+                    if bullet.note == alien.note:
+                        correctHitAliens.append(alien)
+        for bullet in hitBullets:
+            bullet.kill()
+        for alien in correctHitAliens:
+            alien.kill()
 
 
 
