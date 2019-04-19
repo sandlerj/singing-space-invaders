@@ -42,7 +42,7 @@ class Ship(pygame.sprite.Sprite):
     def updateRect(self):
         # Updates sprite rect for blit
         self.rect = pygame.Rect(self.x - self.width//2, self.y - self.height//2,
-                                self.x + self.width//2, self.y + self.height//2)
+                                self.width, self.height)
 
     def update(self, keysDown, screenWidth, screenHeight):
         # Steady movement of sprite if keys held

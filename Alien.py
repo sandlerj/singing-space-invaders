@@ -31,7 +31,7 @@ class Alien(pygame.sprite.Sprite):
         # Alien.stepSize* attributes are for placing on screen initially
         Alien.stepSizeX = Alien.bufferX + Alien.widthLeast
         Alien.stepSizeY = Alien.bufferY + Alien.height
-        
+
         # for actual distance of move across screen (currently same, may change)
         Alien.moveStepSizeX = Alien.stepSizeX
 
@@ -74,7 +74,7 @@ class Alien(pygame.sprite.Sprite):
     def updateRect(self):
         # Updates sprite rect for blit
         self.rect = pygame.Rect(self.x - self.width//2, self.y - self.height//2,
-                                self.x + self.width//2, self.y + self.height//2)
+                                self.width, self.height)
 
     def update(self, vector):
         self.x += Alien.stepSizeX * vector[0]
