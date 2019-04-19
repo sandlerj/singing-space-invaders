@@ -4,7 +4,7 @@
 # Primary game object containing run method.
 # Use PerfectPitchSpaceInvaders().run() to run
 
-import pygame, aubio, random
+import pygame, aubio, random, time
 from pygamegame import PygameGame
 from Ship import Ship
 from Bullet import *
@@ -22,7 +22,9 @@ class SingingSpaceInvaders(PygameGame):
     def init(self):
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
-        ship = Ship(self.width//2, self.height-Ship.image.get_height())
+        self.shipStartX = self.width//2
+        self.shipStartY = self.height-Ship.image.get_height()
+        ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
         self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
@@ -32,7 +34,7 @@ class SingingSpaceInvaders(PygameGame):
         self.shipGroup = pygame.sprite.RenderUpdates(ship)
         self.pitchBulletGroup = pygame.sprite.RenderUpdates()
         self.alienGroup = pygame.sprite.RenderUpdates()
-
+        self.alienBulletGroup = pygame.sprite.RenderUpdates()
         self.dirtyRects = [] #stores rects which have been modified and must be
         #   reblitted
 
@@ -48,7 +50,7 @@ class SingingSpaceInvaders(PygameGame):
 
         # Alien move stufdfsfhsdfdjfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd
         self.alienStepTimer = 0
-        self.alienMoveWaitTime = 1000
+        self.alienMoveWaitTime = 2000
         self.alienSpeedIncreaseFactor = 0.95
         self.alienVector = (1,0)
 
@@ -59,21 +61,46 @@ class SingingSpaceInvaders(PygameGame):
         self.midiScale = [0, 2, 4, 5, 7, 9, 11] # C Major scale in midi vals
         # Notes modulo 11:C  D  E  F  G  A  B
 
+        self.playerLives = 3
+
     def timerFired(self, dt):
         # Ship moved in timer fired for steady movement based on held keys
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
 
         #move bullets
         self.pitchBulletGroup.update(self.width, self.height)
+        self.alienBulletGroup.update(self.width, self.height)
 
+        #check collisons between aliens and player's bullets
         self.bulletAlienCollisions()
+        #fire player bullets
+        self.bulletFiring(dt)        
+        #move aliens
+        self.moveAliens(dt)
+
+        frontRowAliens = self.getFrontRowAliens()
+        for alien in frontRowAliens:
+            coinFlip = random.randint(0,1)
+            if coinFlip == 1:
+                self.alienBulletGroup.add(Bullet(alien.x,alien.y, (0,1)))
+        pygame.sprite.groupcollide(self.shipGroup, self.alienBulletGroup,
+            dokill1=True, dokill2=True)
+        if len(self.shipGroup) == 0:
+            self.pitchBulletGroup.empty()
+            self.alienBulletGroup.empty()
+            time.sleep(1) #If player dies, pause for a second and then respawn
+            self.shipGroup.add(Ship(self.shipStartX, self.shipStartY))
 
 
+    def getFrontRowAliens(self):
+        return 42
 
+
+    def bulletFiring(self,dt):
+        #fires bullets intermitently when there's sound input
         self.bulletCoolDownTimer += dt
-
         #only fire a bullet at most every...
-        bulletCoolDown = 100 #miliseconds
+        bulletCoolDown = 200 #miliseconds
         if self.bulletCoolDownTimer > bulletCoolDown: 
             # Check if current sung pitch is in range
             if self.pitchObject.pitchInRange(self.lowBound, self.highBound,
@@ -83,6 +110,8 @@ class SingingSpaceInvaders(PygameGame):
                 #reset cool down timer
                 self.bulletCoolDownTimer = 0
 
+    def moveAliens(self,dt):
+        #helper method to move aliens as a unit
         if len(self.alienGroup)  > 0:
             self.alienStepTimer += dt
 
@@ -118,6 +147,8 @@ class SingingSpaceInvaders(PygameGame):
     def keyPressed(self, keyCode, modifier):
         if keyCode == pygame.K_SPACE:
             self.populateWithAliens(rand=True)
+        elif keyCode == pygame.K_k:
+            self.shipGroup.empty()
 
     def firePitchBullet(self, midiVal):
         # Given midi val
@@ -132,6 +163,7 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
         self.dirtyRects.extend(self.shipGroup.draw(screen))
         self.dirtyRects.extend(self.alienGroup.draw(screen))
+        self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
         #update only the dirty rects
         pygame.display.update(self.dirtyRects)
         #clear the list of dirty rects
