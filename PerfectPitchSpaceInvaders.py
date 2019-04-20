@@ -4,6 +4,9 @@
 # Primary game object containing run method.
 # Use PerfectPitchSpaceInvaders().run() to run
 
+import ctypes
+ctypes.windll.user32.SetProcessDPIAware()
+
 import pygame, aubio, random, time
 from pygamegame import PygameGame
 from Ship import Ship
@@ -23,7 +26,7 @@ class SingingSpaceInvaders(PygameGame):
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
         self.shipStartX = self.width//2
-        self.shipStartY = self.height-Ship.image.get_height() * 2
+        self.shipStartY = self.height-Ship.image.get_height() * 1.5
         ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
@@ -64,6 +67,14 @@ class SingingSpaceInvaders(PygameGame):
 
         self.playerLives = 3
         self.playerScore = 0
+        self.pointsPerKill = 10
+
+        self.fontSize = Ship.image.get_height()//2
+        self.fontColor = (255,255,255)
+        self.gameFont = pygame.font.SysFont("courier", self.fontSize, bold=True)
+        self.textSideBuffer = 10
+        self.bottomTextY = self.height - self.fontSize - 10
+
 
     def timerFired(self, dt):
 
@@ -183,6 +194,7 @@ class SingingSpaceInvaders(PygameGame):
         for bullet in hitBullets:
             bullet.kill()
         for alien in correctHitAliens:
+            self.playerScore += self.pointsPerKill
             alien.kill()
 
 
@@ -201,6 +213,19 @@ class SingingSpaceInvaders(PygameGame):
                                     self.shipGroup.sprites()[0].y,
                                     (0,-1), midiVal))
 
+    def drawScoreText(self, screen):
+        text = "Score: %d" % self.playerScore
+        dest = self.textSideBuffer, self.bottomTextY
+        textSurf = self.gameFont.render(text, True, self.fontColor)
+        dirty = screen.blit(textSurf, dest)
+        return dirty
+
+    def drawLivesText(self, screen):
+        text = "Lives: %d" % self.playerLives
+        textSurf = self.gameFont.render(text, True, self.fontColor)
+        bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
+        return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
+
     def redrawAll(self, screen):
         # Drawing members of RenderUpdates groups to screen - outputs list of
         # dirty rects for use in pygame.display.update below
@@ -209,10 +234,13 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.extend(self.shipGroup.draw(screen))
         self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
         self.dirtyRects.extend(self.alienGroup.draw(screen))
+        self.dirtyRects.append(self.drawScoreText(screen))
+        self.dirtyRects.append(self.drawLivesText(screen))
         #update only the dirty rects
         pygame.display.update(self.dirtyRects)
         #clear the list of dirty rects
         self.dirtyRects.clear()
+        
 
     def run(self):
         # Run the game
@@ -284,6 +312,6 @@ class SingingSpaceInvaders(PygameGame):
                     note = random.choice(self.midiScale)
                 self.alienGroup.add(Alien(cx,cy, note))
 
-
 if __name__ == "__main__":
     SingingSpaceInvaders().run()
+
