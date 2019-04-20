@@ -26,6 +26,7 @@ class Bullet(pygame.sprite.Sprite):
         self.dx = vector[0]
         self.dy = vector[1]
         self.speed = 10
+        self.mask = pygame.mask.from_surface(self.image)
         self.updateRect() #update rect for sprite blitting
 
     def updateRect(self):

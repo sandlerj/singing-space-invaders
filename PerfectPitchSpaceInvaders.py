@@ -23,7 +23,7 @@ class SingingSpaceInvaders(PygameGame):
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
         self.shipStartX = self.width//2
-        self.shipStartY = self.height-Ship.image.get_height()
+        self.shipStartY = self.height-Ship.image.get_height() * 2
         ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
@@ -47,6 +47,7 @@ class SingingSpaceInvaders(PygameGame):
 
         # Will store time between bullet fires
         self.bulletCoolDownTimer = 0
+        self.alienBulletTimer = 0
 
         # Alien move stufdfsfhsdfdjfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd
         self.alienStepTimer = 0
@@ -62,8 +63,14 @@ class SingingSpaceInvaders(PygameGame):
         # Notes modulo 11:C  D  E  F  G  A  B
 
         self.playerLives = 3
+        self.playerScore = 0
 
     def timerFired(self, dt):
+
+        #check collisons between aliens and player's bullets
+        self.bulletAlienCollisions()
+        self.alienBulletPlayerCollisions()
+
         # Ship moved in timer fired for steady movement based on held keys
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
 
@@ -71,29 +78,65 @@ class SingingSpaceInvaders(PygameGame):
         self.pitchBulletGroup.update(self.width, self.height)
         self.alienBulletGroup.update(self.width, self.height)
 
-        #check collisons between aliens and player's bullets
-        self.bulletAlienCollisions()
-        #fire player bullets
-        self.bulletFiring(dt)        
+        #fire player and alien bullets
+        self.bulletFiring(dt) 
+        self.fireAlienBullets(dt)
         #move aliens
         self.moveAliens(dt)
 
-        frontRowAliens = self.getFrontRowAliens()
-        for alien in frontRowAliens:
-            coinFlip = random.randint(0,1)
-            if coinFlip == 1:
-                self.alienBulletGroup.add(Bullet(alien.x,alien.y, (0,1)))
+    # @staticmethod
+    # def collideMask(sprite1, sprite2):
+    #     # Wrapper for pygame.sprite.collide_mask for use as callback in
+    #     #   groupcollide
+    #     print(sprite1.mask)
+    #     print(sprite2.mask)
+    #     point = pygame.sprite.collide_mask(sprite1, sprite2)
+    #     print(point)
+    #     if point != None:
+    #         return True
+    #     return False
+
+    def alienBulletPlayerCollisions(self):
+        # Checks collisions between player and alien bullets, kills player and
+        #   takes a life away.
         pygame.sprite.groupcollide(self.shipGroup, self.alienBulletGroup,
-            dokill1=True, dokill2=True)
+            True, True)
         if len(self.shipGroup) == 0:
             self.pitchBulletGroup.empty()
             self.alienBulletGroup.empty()
             time.sleep(1) #If player dies, pause for a second and then respawn
             self.shipGroup.add(Ship(self.shipStartX, self.shipStartY))
+            self.playerLives -= 1
+
+    def fireAlienBullets(self, dt):
+        # Possibly fire alien bullets every interval, and reset timer
+        alienBulletCoolDownTime = 2000
+        chanceOfFiring = 5
+        self.alienBulletTimer += dt
+        if self.alienBulletTimer > alienBulletCoolDownTime:
+            self.alienBulletTimer = 0
+            frontRowAliens = self.getFrontRowAliens()
+            for alien in frontRowAliens:
+                coinFlip = random.randint(0,chanceOfFiring)
+                if coinFlip == chanceOfFiring:
+                    self.alienBulletGroup.add(Bullet(alien.x,alien.y, (0,1)))
 
 
     def getFrontRowAliens(self):
-        return 42
+        # Returns list of aliens who have no aliens in front of them, i.e. a 
+        #   clear line of sight for firing bullets
+        frontRowAliens = {}
+        # Map furthest south alien in a column to the x value of that column
+        for alien in self.alienGroup:
+            if alien.x not in frontRowAliens:
+                # If column has not been seen yet, add it with current alien
+                frontRowAliens[alien.x] = alien
+            elif alien.y > frontRowAliens[alien.x].y:
+                #otherwise, check if current alien is further south than last
+                # stored in that column
+                frontRowAliens[alien.x] = alien
+        #return list of those aliens
+        return list(frontRowAliens.values())
 
 
     def bulletFiring(self,dt):
@@ -149,6 +192,8 @@ class SingingSpaceInvaders(PygameGame):
             self.populateWithAliens(rand=True)
         elif keyCode == pygame.K_k:
             self.shipGroup.empty()
+        elif keyCode == pygame.K_l:
+            self.getFrontRowAliens()
 
     def firePitchBullet(self, midiVal):
         # Given midi val
@@ -162,8 +207,8 @@ class SingingSpaceInvaders(PygameGame):
         screen.blit(self.background, (0,0))
         self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
         self.dirtyRects.extend(self.shipGroup.draw(screen))
-        self.dirtyRects.extend(self.alienGroup.draw(screen))
         self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
+        self.dirtyRects.extend(self.alienGroup.draw(screen))
         #update only the dirty rects
         pygame.display.update(self.dirtyRects)
         #clear the list of dirty rects

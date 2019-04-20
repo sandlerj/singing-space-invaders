@@ -25,6 +25,8 @@ class Ship(pygame.sprite.Sprite):
         Ship.image = pygame.transform.scale(Ship.image,
                     (int(screenWidth//scaleFactor * widthHeightRatio),
                         screenWidth//scaleFactor))
+        #mask made here to speed up collision checking
+        Ship.mask = pygame.mask.from_surface(Ship.image)
 
 
     def __init__(self, x, y):
@@ -33,6 +35,7 @@ class Ship(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.image = Ship.image
+        self.mask = Ship.mask
         self.width, self.height = self.image.get_size()
         self.rect = self.image.get_rect()
         self.updateRect()
