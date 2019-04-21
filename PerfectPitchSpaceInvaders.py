@@ -4,6 +4,9 @@
 # Primary game object containing run method.
 # Use PerfectPitchSpaceInvaders().run() to run
 
+# Tells python not to stretch the window despite high PPI display. Solution from
+# https://stackoverflow.com/questions/
+#                      27421391/pygame-display-info-giving-wrong-resolution-size
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
@@ -13,6 +16,7 @@ from Ship import Ship
 from Bullet import *
 from PitchDetectionObject import PitchDetectionObject
 from Alien import Alien
+from Bricks import Brick
 # PygameGame superclass from Lukas Peraza's optional lecture on Pygame
 # https://qwewy.gitbooks.io/pygame-module-manual/chapter1/framework.html
 
@@ -32,6 +36,8 @@ class SingingSpaceInvaders(PygameGame):
 
         self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
+
+        Brick.
 
         # Using RenderUpdates subgroup of class for dirty rect blitting
         self.shipGroup = pygame.sprite.RenderUpdates(ship)
