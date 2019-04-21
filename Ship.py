@@ -25,6 +25,7 @@ class Ship(pygame.sprite.Sprite):
         Ship.image = pygame.transform.scale(Ship.image,
                     (int(screenWidth//scaleFactor * widthHeightRatio),
                         screenWidth//scaleFactor))
+        Ship.width, Ship.height = Ship.image.get_size()
         #mask made here to speed up collision checking
         Ship.mask = pygame.mask.from_surface(Ship.image)
 

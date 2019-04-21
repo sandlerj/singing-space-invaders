@@ -37,7 +37,11 @@ class SingingSpaceInvaders(PygameGame):
         self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
 
-        Brick.
+        self.brickScaleFactor = .3
+        Brick.init(self.width, self.height, self.brickScaleFactor)
+        self.barrierGroups = pygame.sprite.RenderUpdates()
+        self.barrierGroups.add(self.placeBarriers(2))
+        self.barrierFriendlyFire = False
 
         # Using RenderUpdates subgroup of class for dirty rect blitting
         self.shipGroup = pygame.sprite.RenderUpdates(ship)
@@ -87,6 +91,7 @@ class SingingSpaceInvaders(PygameGame):
         #check collisons between aliens and player's bullets
         self.bulletAlienCollisions()
         self.alienBulletPlayerCollisions()
+        self.bulletBarrierCollisions()
 
         # Ship moved in timer fired for steady movement based on held keys
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
@@ -94,6 +99,8 @@ class SingingSpaceInvaders(PygameGame):
         #move bullets
         self.pitchBulletGroup.update(self.width, self.height)
         self.alienBulletGroup.update(self.width, self.height)
+
+        self.barrierGroups.update()
 
         #fire player and alien bullets
         self.bulletFiring(dt) 
@@ -203,6 +210,17 @@ class SingingSpaceInvaders(PygameGame):
             self.playerScore += self.pointsPerKill
             alien.kill()
 
+    def bulletBarrierCollisions(self):
+        for brick in self.barrierGroups:
+            for bullet in self.alienBulletGroup:
+                if pygame.sprite.collide_rect(brick, bullet):
+                    brick.getHit()
+                    bullet.kill()
+            for bullet in self.pitchBulletGroup:
+                if pygame.sprite.collide_rect(brick, bullet):
+                    bullet.kill()
+                    if self.barrierFriendlyFire:
+                        brick.getHit()
 
 
     def keyPressed(self, keyCode, modifier):
@@ -236,6 +254,7 @@ class SingingSpaceInvaders(PygameGame):
         # Drawing members of RenderUpdates groups to screen - outputs list of
         # dirty rects for use in pygame.display.update below
         screen.blit(self.background, (0,0))
+        self.dirtyRects.extend(self.barrierGroups.draw(screen))
         self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
         self.dirtyRects.extend(self.shipGroup.draw(screen))
         self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
@@ -317,6 +336,69 @@ class SingingSpaceInvaders(PygameGame):
                 if rand:
                     note = random.choice(self.midiScale)
                 self.alienGroup.add(Alien(cx,cy, note))
+
+    def placeBarriers(self, numBarriers):
+        toBePlaced = []
+        numBricksWide = 4
+        numBricksTall = 3
+        barrierWidth = Brick.width * numBricksWide
+        barrierHeight = Brick.height * numBricksTall
+        barrierCXList = self.getBarrierCenters(numBarriers)
+        barrierCY = self.shipStartY - Ship.height * 2
+        for x in barrierCXList:
+            toBePlaced.extend(self.buildBarrier(x, barrierCY,
+                            numBricksWide, numBricksTall))
+        return toBePlaced
+
+    def buildBarrier(self, cx, cy, numWide, numTall):
+        print("barrier cent", cx, cy)
+        bricks = []
+        brickArray = self.getBrickArray(numWide, numTall)
+        print(brickArray)
+        for row in range(len(brickArray)):
+            if numTall % 2 == 0:
+                correction = 1 
+                y = (cy - Brick.height * ((numTall//2) - row)) + \
+                        correction * Brick.height//2
+            else:
+                y = cy - Brick.height * ((numTall//2) - row)
+            for col in range(len(brickArray[row])):
+                if numWide % 2 == 0:
+                    correction = 1 
+                    x = (cx - Brick.width * ((numWide//2) - col)) + \
+                            correction * Brick.width//2
+                else:
+                    x = cx - Brick.width * ((numWide//2) - col)
+                if brickArray[row][col] != None:
+                    bricks.append(Brick(x,y, brickArray[row][col]))
+        return bricks
+
+
+
+    def getBrickArray(self, numWide, numTall):
+        result = [[None] * numWide for row in range(numTall)]
+        for col in range(len(result[0])):
+            result[0][col] = 0
+        for row in range(len(result)):
+            result[row][0] = 0
+            result[row][-1] = 0
+        result[0][0] = 1
+        result[0][-1] = 2
+        result[1][1] = 0
+        result[1][-2] = 0
+        return result
+
+
+    def getBarrierCenters(self, numBarriers):
+        cxList = []
+        for x in range(0, self.width, self.width//(numBarriers + 1)):
+            cxList.append(x)
+        if 0 in cxList:
+            #remov first element, which is on wall
+            cxList.remove(0)
+        if len(cxList) > numBarriers:
+            cxList.pop()
+        return cxList
 
 if __name__ == "__main__":
     SingingSpaceInvaders().run()

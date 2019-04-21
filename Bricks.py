@@ -7,14 +7,16 @@ class Brick(pygame.sprite.Sprite):
         # Load and scale images at the samet time. Three separate libraries for
         #   main bricks and corners. Corners need to be rotated 180 for
         #   interior edges
-        Brick.imageLib = getImagesAndScale("Photos" + os.sep + \
-            "nonCorner", scaleFactor)
-        Brick.imageLibLeft = getImagesAndScale("Photos" + os.sep + \
-            "leftBrickCorner", scaleFactor)
-        Brick.imageLibRight = getImagesAndScale("Photos" os.sep + \
-            "rightBrickCorner", scaleFactor)
+        Brick.imageLib = getImagesAndScale("Photos" + os.sep + "Bricks" +\
+            os.sep + "nonCorner", scaleFactor)
+        Brick.imageLibLeft = getImagesAndScale("Photos" + os.sep + "Bricks" + \
+            os.sep + "leftBrickCorner", scaleFactor)
+        Brick.imageLibRight = getImagesAndScale("Photos" + os.sep + "Bricks" +  \
+            os.sep + "rightBrickCorner", scaleFactor)
+        Brick.width, Brick.height = Brick.imageLib[0].get_size()
 
     def __init__(self, x, y, brickType):
+        super().__init__()
         self.x = x
         self.y = y
         self.brickType = brickType
@@ -43,7 +45,7 @@ class Brick(pygame.sprite.Sprite):
             self.kill()
         else:
             self.image = self.imgLib[self.timesHit]
-            self.updateRect()s
+            self.updateRect()
 
     def getHit(self):
         self.timesHit += 1
@@ -53,6 +55,6 @@ def getImagesAndScale(path, scale):
     for img in os.listdir(path):
         #assigns key of first char in file name, which is number of times
         #   brick has been hit, to loaded and scaled pygame image surface
-        imageDict[img[0]] = pygame.transform.rotozoom(pygame.image.load(path \
+        imageDict[int(img[0])] = pygame.transform.rotozoom(pygame.image.load(path \
                             + os.sep + img), 0, scale)
     return imageDict
