@@ -41,10 +41,9 @@ class SingingSpaceInvaders(PygameGame):
         self.brickScaleFactor = .2
         Brick.init(self.width, self.height, self.brickScaleFactor)
         self.barrierGroups = pygame.sprite.RenderUpdates()
-        self.barrierGroups.add()
-        self.barrierFriendlyFire = False
+
         self.maxBarriers = 4
-        self.startingBarriers = 3
+
 
         # Using RenderUpdates subgroup of class for dirty rect blitting
         self.shipGroup = pygame.sprite.RenderUpdates()
@@ -59,23 +58,11 @@ class SingingSpaceInvaders(PygameGame):
         self.background.fill(self.bgColor)
 
 
-        # Will store time between bullet fires
-        self.bulletCoolDownTimer = 0
-        self.alienBulletTimer = 0
-
-        # Alien move stufdfsfhsdfdjfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd
-        self.alienStepTimer = 0
-        self.alienMoveWaitTime = 2000
-        self.alienSpeedIncreaseFactor = 0.95
-        self.alienVector = (1,0)
-
-        self.pointsPerKill = 10
-        
         self.soundDetectionInit()
         self.textFontInit()
         self.modesInit()
 
-        self.startNewGame()
+        self.startNewGame(self.hardGame)
 
 
     def soundDetectionInit(self):
@@ -144,8 +131,24 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.gameOverMode
 
 
-    def startNewGame(self):
+    def startNewGame(self, hardMode=False):
         self.mode = self.gameMode
+
+        # Will store time between bullet fires
+        self.bulletCoolDownTimer = 0
+        self.alienBulletTimer = 0
+
+        # Alien move stuff
+        self.alienStepTimer = 0
+        self.alienSpeedIncreaseFactor = 0.95
+        self.alienVector = (1,0)
+
+        self.barrierFriendlyFire = False
+        if hardMode: self.barrierFriendlyFire = True
+
+        self.startingBarriers = 3
+
+        self.pointsPerKill = 10
         self.alienMoveWaitTime = self.baseAlienMoveWaitTime
         self.playerLevel = 0
         self.playerLives = 3
