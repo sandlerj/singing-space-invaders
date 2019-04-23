@@ -17,6 +17,7 @@ class PitchDetectionObject(object):
         self.sampleSize = 1024
         self.tolerance = 0.8 #Tolerance for pitch detection
         self.note = 0
+        self.volume = 0
 
 
         self.p = pyaudio.PyAudio() #instantialize pyaudio
@@ -57,6 +58,11 @@ class PitchDetectionObject(object):
         # since people often sing out of tune/cannot sing exact pitches due to
         # vibrato.
 
+        # Volume (energy) detection. Borrowed from nabeel913:
+        # https://gist.github.com/nabeel913/344fa7a501f9eef6d6090aa20b00d954
+        self.volume = numpy.sum(dataAubio**2)/len(dataAubio)
+        self.volume = float("{:6f}".format(self.volume))
+
         return (in_data, pyaudio.paContinue)
 
 
@@ -89,3 +95,6 @@ class PitchDetectionObject(object):
                 #must mod midival by 12 to get pitch without octave
                 return False
         return lowerBound <= self.note <= upperBound
+
+    def volumeInRange(self, minimum):
+        return self.volume >= minimum

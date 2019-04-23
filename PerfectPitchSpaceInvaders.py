@@ -74,6 +74,7 @@ class SingingSpaceInvaders(PygameGame):
         self.highBound = 72 #midi val for C5
         self.midiScale = [0, 2, 4, 5, 7, 9, 11] # C Major scale in midi vals
         # Notes modulo 11:C  D  E  F  G  A  B
+        self.minimumVolume = 0.001
 
     def textFontInit(self):
         self.fontSize = Ship.image.get_height()//2
@@ -223,9 +224,11 @@ class SingingSpaceInvaders(PygameGame):
         #only fire a bullet at most every...
         bulletCoolDown = 200 #miliseconds
         if self.bulletCoolDownTimer > bulletCoolDown: 
-            # Check if current sung pitch is in range
+            # Check if current sung pitch is in range, and ignores quiet sounds
+            #   to filter background noise
             if self.pitchObject.pitchInRange(self.lowBound, self.highBound,
-                scale = self.midiScale):
+            scale = self.midiScale) and \
+            self.pitchObject.volumeInRange(self.minimumVolume):
                 # If so, fire new bullet
                 self.firePitchBullet(self.pitchObject.getNote())
                 #reset cool down timer
