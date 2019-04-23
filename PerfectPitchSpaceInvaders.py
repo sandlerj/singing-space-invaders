@@ -10,7 +10,7 @@
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
-import pygame, aubio, random, time
+import pygame, aubio, random, time, copy
 from pygamegame import PygameGame
 from Ship import Ship
 from Bullet import *
@@ -31,20 +31,23 @@ class SingingSpaceInvaders(PygameGame):
         #places ship near bottom of screen
         self.shipStartX = self.width//2
         self.shipStartY = self.height-Ship.image.get_height() * 1.5
-        ship = Ship(self.shipStartX, self.shipStartY)
+        self.ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
         self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
+        self.baseAlienMoveWaitTime = 2000
 
-        self.brickScaleFactor = .3
+        self.brickScaleFactor = .2
         Brick.init(self.width, self.height, self.brickScaleFactor)
         self.barrierGroups = pygame.sprite.RenderUpdates()
-        self.barrierGroups.add(self.placeBarriers(2))
+        self.barrierGroups.add()
         self.barrierFriendlyFire = False
+        self.maxBarriers = 4
+        self.startingBarriers = 3
 
         # Using RenderUpdates subgroup of class for dirty rect blitting
-        self.shipGroup = pygame.sprite.RenderUpdates(ship)
+        self.shipGroup = pygame.sprite.RenderUpdates()
         self.pitchBulletGroup = pygame.sprite.RenderUpdates()
         self.alienGroup = pygame.sprite.RenderUpdates()
         self.alienBulletGroup = pygame.sprite.RenderUpdates()
@@ -55,8 +58,6 @@ class SingingSpaceInvaders(PygameGame):
         self.bgColor = (0,0,0) # black
         self.background.fill(self.bgColor)
 
-        #instantiate object for pitch detection
-        self.pitchObject = PitchDetectionObject()
 
         # Will store time between bullet fires
         self.bulletCoolDownTimer = 0
@@ -68,6 +69,18 @@ class SingingSpaceInvaders(PygameGame):
         self.alienSpeedIncreaseFactor = 0.95
         self.alienVector = (1,0)
 
+        self.pointsPerKill = 10
+        
+        self.soundDetectionInit()
+        self.textFontInit()
+        self.modesInit()
+
+        self.startNewGame()
+
+
+    def soundDetectionInit(self):
+            #instantiate object for pitch detection
+        self.pitchObject = PitchDetectionObject()
 
         # Bounds for checking if pitch is in certain range using
         self.lowBound = 48 #midi val for C3
@@ -75,19 +88,29 @@ class SingingSpaceInvaders(PygameGame):
         self.midiScale = [0, 2, 4, 5, 7, 9, 11] # C Major scale in midi vals
         # Notes modulo 11:C  D  E  F  G  A  B
 
-        self.playerLives = 3
-        self.playerScore = 0
-        self.pointsPerKill = 10
-
+    def textFontInit(self):
         self.fontSize = Ship.image.get_height()//2
         self.fontColor = (255,255,255)
         self.gameFont = pygame.font.SysFont("courier", self.fontSize, bold=True)
         self.textSideBuffer = 10
         self.bottomTextY = self.height - self.fontSize - 10
 
+    def modesInit(self):
+        self.menuMode = 'menu mode'
+        self.gameMode = 'game mode'
+        self.gameOverMode = 'game over mode'
+        self.highScoreScreenMode = 'high score mode'
+        self.mode = self.gameMode
+        self.hardGame = False
 
     def timerFired(self, dt):
+        if self.mode == self.gameMode: self.gameTimerFired(dt)
+        elif self.mode == self.gameOverMode: self.gameOverTimerFired(dt)
 
+    def gameTimerFired(self, dt):
+        self.checkForNewLevel()
+        self.checkGameOver()
+                
         #check collisons between aliens and player's bullets
         self.bulletAlienCollisions()
         self.alienBulletPlayerCollisions()
@@ -108,17 +131,45 @@ class SingingSpaceInvaders(PygameGame):
         #move aliens
         self.moveAliens(dt)
 
-    # @staticmethod
-    # def collideMask(sprite1, sprite2):
-    #     # Wrapper for pygame.sprite.collide_mask for use as callback in
-    #     #   groupcollide
-    #     print(sprite1.mask)
-    #     print(sprite2.mask)
-    #     point = pygame.sprite.collide_mask(sprite1, sprite2)
-    #     print(point)
-    #     if point != None:
-    #         return True
-    #     return False
+    def gameOverTimerFired(self,dt):
+        print('game over')
+
+    def checkGameOver(self):
+        alienPastPlayerY = False
+        for alien in self.getFrontRowAliens():
+            if alien.y + alien.image.get_height()//2 >= \
+            self.shipStartY - Ship.height//2:
+                alienPastPlayerY = True
+        if alienPastPlayerY or self.playerLives < 0:
+            self.mode = self.gameOverMode
+
+
+    def startNewGame(self):
+        self.mode = self.gameMode
+        self.alienMoveWaitTime = self.baseAlienMoveWaitTime
+        self.playerLevel = 0
+        self.playerLives = 3
+        self.playerScore = 0
+        self.populateWithAliens()
+        self.placeBarriers(self.startingBarriers)
+        self.shipGroup.add(copy.copy(self.ship))
+
+    def checkForNewLevel(self):
+        #checks if new level should be started and takes appropriate action
+        if len(self.alienGroup) == 0:
+            if not self.hardGame:
+                self.playerLives += 1
+                self.barrierGroups.empty()
+                self.placeBarriers(random.randint(1, self.maxBarriers))
+                time.sleep(2)
+            self.pitchBulletGroup.empty()
+            self.alienBulletGroup.empty()
+            self.populateWithAliens(rand=True)
+            self.playerLevel += 1
+            alienSpeedIncrement = 200
+            self.alienMoveWaitTime = self.baseAlienMoveWaitTime - \
+                    alienSpeedIncrement * self.playerLevel
+
 
     def alienBulletPlayerCollisions(self):
         # Checks collisions between player and alien bullets, kills player and
@@ -224,12 +275,28 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def keyPressed(self, keyCode, modifier):
-        if keyCode == pygame.K_SPACE:
-            self.populateWithAliens(rand=True)
-        elif keyCode == pygame.K_k:
+        if self.mode == self.gameMode: self.gameKeyPressed(keyCode, modifier)
+        elif self.mode == self.gameOverMode: self.gameOverKeyPressed(keyCode,
+                                                            modifier)
+
+    def gameOverKeyPressed(self, keyCode, modifier):
+        self.alienGroup.empty()
+        self.barrierGroups.empty()
+        self.alienBulletGroup.empty()
+        self.pitchBulletGroup.empty()
+        self.shipGroup.empty()
+        if keyCode == pygame.K_r:
+            self.startNewGame()
+            self.mode = 'game mode'
+
+    def gameKeyPressed(self, keyCode, modifier):
+        #currently all debug code... more to be added
+        if keyCode == pygame.K_k:
             self.shipGroup.empty()
         elif keyCode == pygame.K_l:
-            self.getFrontRowAliens()
+            self.alienGroup.empty()
+        elif keyCode == pygame.K_j:
+            self.mode = self.gameOverMode
 
     def firePitchBullet(self, midiVal):
         # Given midi val
@@ -251,6 +318,10 @@ class SingingSpaceInvaders(PygameGame):
         return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
 
     def redrawAll(self, screen):
+        if self.mode == self.gameMode: self.gameRedrawAll(screen)
+        if self.mode == self.gameOverMode: self.gameOverRedrawAll(screen)
+
+    def gameRedrawAll(self, screen):
         # Drawing members of RenderUpdates groups to screen - outputs list of
         # dirty rects for use in pygame.display.update below
         screen.blit(self.background, (0,0))
@@ -265,14 +336,10 @@ class SingingSpaceInvaders(PygameGame):
         pygame.display.update(self.dirtyRects)
         #clear the list of dirty rects
         self.dirtyRects.clear()
-        
 
-    def run(self):
-        # Run the game
-        super().run()
-        # After mainloop is exited (in superclass run method), kill the pitch
-        # object to close stream and terminate pyaudio.
-        self.pitchObject.kill()
+    def gameOverRedrawAll(self, screen):
+        pass
+        
 
     def getLeftmostAlien(self):
         #return left side of left-most alien rect
@@ -348,7 +415,7 @@ class SingingSpaceInvaders(PygameGame):
         for x in barrierCXList:
             toBePlaced.extend(self.buildBarrier(x, barrierCY,
                             numBricksWide, numBricksTall))
-        return toBePlaced
+        self.barrierGroups.add(toBePlaced)
 
     def buildBarrier(self, cx, cy, numWide, numTall):
         print("barrier cent", cx, cy)
@@ -399,6 +466,13 @@ class SingingSpaceInvaders(PygameGame):
         if len(cxList) > numBarriers:
             cxList.pop()
         return cxList
+
+    def run(self):
+        # Run the game
+        super().run()
+        # After mainloop is exited (in superclass run method), kill the pitch
+        # object to close stream and terminate pyaudio.
+        self.pitchObject.kill()
 
 if __name__ == "__main__":
     SingingSpaceInvaders().run()
