@@ -1,12 +1,10 @@
 #Joseph Sandler, jsandler, Section B
-# TP1 Deliverable
+# TP2 Deliverable
 
 # Primary game object containing run method.
-# Use PerfectPitchSpaceInvaders().run() to run
+# Use SingingPitchSpaceInvaders().run() to run
 
-# Tells python not to stretch the window despite high PPI display. Solution from
-# https://stackoverflow.com/questions/
-#                      27421391/pygame-display-info-giving-wrong-resolution-size
+# Tells python not to stretch the window despite high PPI display
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
@@ -22,11 +20,12 @@ from Bricks import Brick
 
 class SingingSpaceInvaders(PygameGame): 
 
-    def __init__(self, width=700, height=850, fps=30,
+    def __init__(self, width=700, height=900, fps=30,
                                                     title="Space Invaders 112"):
         super().__init__(width, height, fps, title)
 
     def init(self):
+        self.guiInit()
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
         self.shipStartX = self.width//2
@@ -57,16 +56,42 @@ class SingingSpaceInvaders(PygameGame):
         self.bgColor = (0,0,0) # black
         self.background.fill(self.bgColor)
 
-
         self.soundDetectionInit()
         self.textFontInit()
         self.modesInit()
 
-        self.startNewGame(self.hardGame)
+        #self.startNewGame(self.hardMode)  
 
+
+    def guiInit(self):
+        # helper for main init to handle some gui specific things (line count)
+        self.guiImageDict = {}
+        self.guiImageDict["helpScreen"] = pygame.image.load(os.path.join("GUI",
+            "helpScreen.png"))
+        self.guiImageDict["title"] = pygame.image.load(os.path.join("GUI",
+            "logo.png"))
+
+        self.guiImageDict["easyButton"] = pygame.image.load(os.path.join("GUI",
+            "easyButton.png"))
+        self.guiImageDict["hardButton"] = pygame.image.load(os.path.join("GUI",
+            "hardButton.png"))
+        spacer = 3
+        self.easyButtonRect = self.guiImageDict['easyButton'].get_rect()
+        self.easyButtonRect.move_ip((self.width//2 - \
+            self.guiImageDict["easyButton"].get_width()//2),
+            (self.height - self.guiImageDict['easyButton'].get_height()\
+                * spacer))
+        self.hardButtonRect = self.guiImageDict['hardButton'].get_rect()
+        self.hardButtonRect.move_ip((self.width//2 - \
+            self.guiImageDict["hardButton"].get_width()//2),
+            (self.height - self.guiImageDict['hardButton'].get_height()\
+                * (spacer/2)))
+
+        
 
     def soundDetectionInit(self):
-            #instantiate object for pitch detection
+        # Helper init to manage pitchDetectionObject
+        #instantiate object for pitch detection
         self.pitchObject = PitchDetectionObject()
 
         # Bounds for checking if pitch is in certain range using
@@ -74,26 +99,41 @@ class SingingSpaceInvaders(PygameGame):
         self.highBound = 72 #midi val for C5
         self.midiScale = [0, 2, 4, 5, 7, 9, 11] # C Major scale in midi vals
         # Notes modulo 11:C  D  E  F  G  A  B
-        self.minimumVolume = 0.001
+        self.minimumVolume = 0.001 #min volume to filter out background noise
 
     def textFontInit(self):
+        # Helper for main init to handle font related things
         self.fontSize = Ship.image.get_height()//2
         self.fontColor = (255,255,255)
-        self.gameFont = pygame.font.SysFont("courier", self.fontSize, bold=True)
+        # Visitor font by Ænigma at https://www.dafont.com/visitor.font
+        self.gameFont = pygame.font.Font("Font" + os.sep + "visitor1.ttf",
+            self.fontSize)
         self.textSideBuffer = 10
         self.bottomTextY = self.height - self.fontSize - 10
+        self.bigGameFont = pygame.font.Font("Font" + os.sep + "visitor1.ttf",
+            self.fontSize * 2)
 
     def modesInit(self):
+        # Set up game mode structure for screens and start on menu mode
         self.menuMode = 'menu mode'
         self.gameMode = 'game mode'
         self.gameOverMode = 'game over mode'
-        self.highScoreScreenMode = 'high score mode'
-        self.mode = self.gameMode
-        self.hardGame = False
+        self.pauseMode = 'pause mode'
+        self.mode = self.menuMode
+        self.hardMode = False
 
     def timerFired(self, dt):
+        # Main timer fired which dispatches to mode specific tF
         if self.mode == self.gameMode: self.gameTimerFired(dt)
         elif self.mode == self.gameOverMode: self.gameOverTimerFired(dt)
+        elif self.mode == self.menuMode: self.menuTimerFired(dt)
+        elif self.mode == self.pauseMode: self.pauseTimerFired(dt)
+
+    def menuTimerFired(self, dt):
+        pass
+
+    def pauseTimerFired(self, dt):
+        pass
 
     def gameTimerFired(self, dt):
         self.checkForNewLevel()
@@ -120,9 +160,15 @@ class SingingSpaceInvaders(PygameGame):
         self.moveAliens(dt)
 
     def gameOverTimerFired(self,dt):
-        print('game over')
+        self.alienGroup.empty()
+        self.barrierGroups.empty()
+        self.alienBulletGroup.empty()
+        self.pitchBulletGroup.empty()
+        self.shipGroup.empty()
 
     def checkGameOver(self):
+        # Check if the game is over, whether because alieans got down to the
+        #   player, or because player has <0 lives
         alienPastPlayerY = False
         for alien in self.getFrontRowAliens():
             if alien.y + alien.image.get_height()//2 >= \
@@ -133,7 +179,10 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def startNewGame(self, hardMode=False):
-        self.mode = self.gameMode
+        #starts a new game and takes flag for hardMode
+        #   in hard mode, barries don't regenerate and player can damage own
+        #   barriers
+        self.mode = self.pauseMode
 
         # Will store time between bullet fires
         self.bulletCoolDownTimer = 0
@@ -161,11 +210,11 @@ class SingingSpaceInvaders(PygameGame):
     def checkForNewLevel(self):
         #checks if new level should be started and takes appropriate action
         if len(self.alienGroup) == 0:
-            if not self.hardGame:
+            if not self.hardMode:
                 self.playerLives += 1
                 self.barrierGroups.empty()
                 self.placeBarriers(random.randint(1, self.maxBarriers))
-                time.sleep(2)
+            time.sleep(2)
             self.pitchBulletGroup.empty()
             self.alienBulletGroup.empty()
             self.populateWithAliens(rand=True)
@@ -268,6 +317,7 @@ class SingingSpaceInvaders(PygameGame):
             alien.kill()
 
     def bulletBarrierCollisions(self):
+        # Checks if bullets collide with any of the brick sprites in the barrier
         for brick in self.barrierGroups:
             for bullet in self.alienBulletGroup:
                 if pygame.sprite.collide_rect(brick, bullet):
@@ -281,23 +331,28 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def keyPressed(self, keyCode, modifier):
+        #Key pressed dispatch
         if self.mode == self.gameMode: self.gameKeyPressed(keyCode, modifier)
         elif self.mode == self.gameOverMode: self.gameOverKeyPressed(keyCode,
                                                             modifier)
+        elif self.mode == self.menuMode: pass
+        elif self.mode == self.pauseMode: self.pauseKeyPressed(keyCode,
+            modifier)
+
+    def pauseKeyPressed(self, keyCode, modifier):
+        #If any key is pressed, go to gameMode
+        self.dirtyRects.append(pygame.rect.Rect(0,0,self.width, self.height))
+        self.mode = self.gameMode
 
     def gameOverKeyPressed(self, keyCode, modifier):
-        self.alienGroup.empty()
-        self.barrierGroups.empty()
-        self.alienBulletGroup.empty()
-        self.pitchBulletGroup.empty()
-        self.shipGroup.empty()
-        if keyCode == pygame.K_r:
-            self.startNewGame()
-            self.mode = 'game mode'
+        #any key leads to menu
+        self.mode = self.menuMode
 
     def gameKeyPressed(self, keyCode, modifier):
-        #currently all debug code... more to be added
-        if keyCode == pygame.K_k:
+        if keyCode == pygame.K_p:
+            self.mode = self.pauseMode
+        #The rest currently is debug code
+        elif keyCode == pygame.K_k:
             self.shipGroup.empty()
         elif keyCode == pygame.K_l:
             self.alienGroup.empty()
@@ -305,12 +360,13 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.gameOverMode
 
     def firePitchBullet(self, midiVal):
-        # Given midi val
+        # Given midi val will fire a pitch bullet from ship pos
         self.pitchBulletGroup.add(PitchBullet(self.shipGroup.sprites()[0].x,
                                     self.shipGroup.sprites()[0].y,
                                     (0,-1), midiVal))
 
     def drawScoreText(self, screen):
+        # draws score text at bottom left
         text = "Score: %d" % self.playerScore
         dest = self.textSideBuffer, self.bottomTextY
         textSurf = self.gameFont.render(text, True, self.fontColor)
@@ -318,14 +374,22 @@ class SingingSpaceInvaders(PygameGame):
         return dirty
 
     def drawLivesText(self, screen):
+        # Draws lives text at bottom right
         text = "Lives: %d" % self.playerLives
         textSurf = self.gameFont.render(text, True, self.fontColor)
         bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
         return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
 
     def redrawAll(self, screen):
+        # Redraw all dispatch
         if self.mode == self.gameMode: self.gameRedrawAll(screen)
-        if self.mode == self.gameOverMode: self.gameOverRedrawAll(screen)
+        elif self.mode == self.gameOverMode: self.gameOverRedrawAll(screen)
+        elif self.mode == self.pauseMode: self.pauseRedrawAll(screen)
+        elif self.mode == self.menuMode: self.menuRedrawAll(screen)
+
+    def pauseRedrawAll(self, screen):
+        screen.blit(self.guiImageDict['helpScreen'], (0,0))
+        pygame.display.flip()
 
     def gameRedrawAll(self, screen):
         # Drawing members of RenderUpdates groups to screen - outputs list of
@@ -344,8 +408,41 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.clear()
 
     def gameOverRedrawAll(self, screen):
-        pass
+        text = "GAME OVER"
+        textSurf = self.bigGameFont.render(text, True, self.fontColor)
+        screen.fill((0,0,0))
+        screen.blit(textSurf, (self.width//2 - textSurf.get_width()//2,
+            Ship.height))
+        text2 = "PRESS ANY KEY"
+        text2Surf = self.gameFont.render(text2, True, self.fontColor)
+        screen.blit(text2Surf, (self.width//2 - text2Surf.get_width()//2,
+            self.height//2))
+        pygame.display.flip()
+
+    def menuRedrawAll(self, screen):
+        screen.fill((0,0,0))
+        bufferY = 30
+        screen.blit(self.guiImageDict['title'],
+            (self.width//2 - self.guiImageDict['title'].get_width()//2,
+                bufferY))
+        screen.blit(self.guiImageDict['easyButton'], self.easyButtonRect)
+        screen.blit(self.guiImageDict['hardButton'], self.hardButtonRect)
+
+        pygame.display.flip()
         
+    def mousePressed(self, x, y):
+        # Mouse currently only used in menu mode
+        if self.mode == self.menuMode: self.menuMousePressed(x,y)
+        else: pass
+
+    def menuMousePressed(self, x, y):
+        #check if clicked inside buttons
+        if self.easyButtonRect.collidepoint(x,y):
+            self.hardMode = False
+            self.startNewGame(self.hardMode)
+        elif self.hardButtonRect.collidepoint(x,y):
+            self.hardMode = True
+            self.startNewGame(self.hardMode)
 
     def getLeftmostAlien(self):
         #return left side of left-most alien rect
@@ -394,6 +491,7 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def populateWithAliens(self, rand=False):
+        # Puts aliens in top left corner of screen
         topBuffer = Alien.height//2
         numCols = 10
         numRows = 7
@@ -411,6 +509,8 @@ class SingingSpaceInvaders(PygameGame):
                 self.alienGroup.add(Alien(cx,cy, note))
 
     def placeBarriers(self, numBarriers):
+        # Adds barriers (non-pygame grouping of brick sprites) to barrierGroups
+        #   list to be blitted
         toBePlaced = []
         numBricksWide = 4
         numBricksTall = 3
@@ -424,10 +524,9 @@ class SingingSpaceInvaders(PygameGame):
         self.barrierGroups.add(toBePlaced)
 
     def buildBarrier(self, cx, cy, numWide, numTall):
-        print("barrier cent", cx, cy)
+        # Returns list of brick sprites which together would form a barrier
         bricks = []
         brickArray = self.getBrickArray(numWide, numTall)
-        print(brickArray)
         for row in range(len(brickArray)):
             if numTall % 2 == 0:
                 correction = 1 
@@ -449,20 +548,24 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def getBrickArray(self, numWide, numTall):
+        #Based on the barrier dimensions, returns a 2D list which designates
+        #   which cells should have a brick sprite and what image for the sprite
         result = [[None] * numWide for row in range(numTall)]
         for col in range(len(result[0])):
-            result[0][col] = 0
+            result[0][col] = 0 #normal brick
         for row in range(len(result)):
             result[row][0] = 0
             result[row][-1] = 0
-        result[0][0] = 1
-        result[0][-1] = 2
+        result[0][0] = 1 #corner image
+        result[0][-1] = 2 #corner image
         result[1][1] = 0
         result[1][-2] = 0
         return result
 
 
     def getBarrierCenters(self, numBarriers):
+        #given the screen width and the number of barriers, returns a list
+        #   of x positions where given number of barriers should be centered
         cxList = []
         for x in range(0, self.width, self.width//(numBarriers + 1)):
             cxList.append(x)

@@ -26,11 +26,13 @@ class Brick(pygame.sprite.Sprite):
         self.updateRect()
 
     def getLib(self):
-        if self.brickType == 0:
+        #gets the appropriate brick image library depending on type (which is
+        #   ultimately given by a 2dlist of vals
+        if self.brickType == 0: #normal brick
             return Brick.imageLib
-        elif self.brickType == 1:
+        elif self.brickType == 1: #upper left corner
             return Brick.imageLibLeft
-        elif self.brickType == 2:
+        elif self.brickType == 2: #upper right corner
             return Brick.imageLibRight
 
     def updateRect(self):
@@ -48,13 +50,16 @@ class Brick(pygame.sprite.Sprite):
             self.updateRect()
 
     def getHit(self):
+        # Increases number of times brick has been hit. timesHit val corresponds
+        #   to key of img in appropriate library to show decay of brick
         self.timesHit += 1
 
 def getImagesAndScale(path, scale):
     imageDict = {}
     for img in os.listdir(path):
         #assigns key of first char in file name, which is number of times
-        #   brick has been hit, to loaded and scaled pygame image surface
-        imageDict[int(img[0])] = pygame.transform.rotozoom(pygame.image.load(path \
-                            + os.sep + img), 0, scale)
+        #   brick has been hit for that image, to loaded and scaled pygame 
+        #   image surface
+        imageDict[int(img[0])] = pygame.transform.rotozoom(\
+            pygame.image.load(path + os.sep + img), 0, scale)
     return imageDict
