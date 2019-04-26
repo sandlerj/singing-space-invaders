@@ -20,7 +20,7 @@ from Bricks import Brick
 
 class SingingSpaceInvaders(PygameGame): 
 
-    def __init__(self, width=700, height=900, fps=30,
+    def __init__(self, width=700, height=1000, fps=30,
                                                     title="Space Invaders 112"):
         super().__init__(width, height, fps, title)
 
@@ -33,7 +33,7 @@ class SingingSpaceInvaders(PygameGame):
         self.ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
-        self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
+        self.alienScaleFactor = 35 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
         self.baseAlienMoveWaitTime = 2000
 
@@ -388,7 +388,9 @@ class SingingSpaceInvaders(PygameGame):
         elif self.mode == self.menuMode: self.menuRedrawAll(screen)
 
     def pauseRedrawAll(self, screen):
-        screen.blit(self.guiImageDict['helpScreen'], (0,0))
+        pauseImage = self.guiImageDict['helpScreen']
+        screen.blit(pauseImage, (self.width//2 - pauseImage.get_width()//2,
+            self.height//2 - pauseImage.get_height()//2))
         pygame.display.flip()
 
     def gameRedrawAll(self, screen):
@@ -493,7 +495,7 @@ class SingingSpaceInvaders(PygameGame):
     def populateWithAliens(self, rand=False):
         # Puts aliens in top left corner of screen
         topBuffer = Alien.height//2
-        numCols = 10
+        numCols = 8
         numRows = 7
         notes = iter(self.midiScale)
         #nested forloop drawing aliens with buffer
