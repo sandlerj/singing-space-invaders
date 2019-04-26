@@ -66,3 +66,7 @@ class Ship(pygame.sprite.Sprite):
         if self.x + self.width//2 >= screenWidth or self.x - self.width//2 <= 0:
             self.x -= self.speed * self.dx
         self.updateRect() #update for blitting
+
+    def getPos(self):
+        #returns tuple of x,y coords
+        return (self.x, self.y)

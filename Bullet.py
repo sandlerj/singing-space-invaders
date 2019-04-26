@@ -1,6 +1,7 @@
 #Joseph Sandler, jsandler, Section B
 
-import pygame, os, copy
+import pygame, os, copy, math
+from numpy import real
 #Bullet sprite and subclasee PitchBullet
 
 class Bullet(pygame.sprite.Sprite):
@@ -11,7 +12,12 @@ class Bullet(pygame.sprite.Sprite):
         Bullet.width = screenWidth//100
         heightWidthRatio = 3
         Bullet.image = pygame.Surface((Bullet.width,
-                                        Bullet.width * heightWidthRatio))
+                                        Bullet.width * heightWidthRatio),
+                                        pygame.SRCALPHA)
+        #Use of SRCALPHA to create alpha channel for rotation solution from
+        # jsbueno on stackoverflow:
+        # <https://stackoverflow.com/questions/40949613/how-to-rotate-a-surface-
+        # in-pygame-without-changing-its-shape>
         Bullet.image.fill((255,255,255))
 
 
@@ -21,6 +27,8 @@ class Bullet(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.image = copy.copy(Bullet.image) #prevent aliasing
+        self.image = pygame.transform.rotate(self.image,
+            math.degrees(math.atan2(*vector)))
         self.width, self.height = self.image.get_size()
         self.rect = self.image.get_rect()
         self.dx = vector[0]
@@ -38,10 +46,17 @@ class Bullet(pygame.sprite.Sprite):
         # Move bullet, delete if off screen
         self.x += self.dx * self.speed
         self.y += self.dy * self.speed
+        # round pos to int because whole pixels
+        self.x, self.y = (roundHalfUp((self.x).real), roundHalfUp((self.y).real))
         self.updateRect()
         if self.x < 0 or self.x > screenWidth or self.y < 0 or \
             self.y >screenHeight:
             self.kill()
+
+    def updateVector(self, vector):
+        #Updates dx,dy with new vector given
+        self.dx = vector[0]
+        self.dy = vector[1]
 
 class PitchBullet(Bullet):
     # Subclass of bullet which has note attribute, which also determiens color
@@ -71,3 +86,11 @@ def colorByNote(note):
                     (255, 0, 255)   # B  fuschia
                     ]
     return listOfColors[note] #return color based on index
+
+def roundHalfUp(d):
+    # From: https://www.cs.cmu.edu/~112/notes/notes-variables-and-functions.html
+    # Round to nearest with ties going away from zero.
+    # You do not need to understand how this function works.
+    import decimal
+    rounding = decimal.ROUND_HALF_UP
+    return int(decimal.Decimal(d).to_integral_value(rounding=rounding))

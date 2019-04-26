@@ -8,7 +8,7 @@
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
-import pygame, aubio, random, time, copy
+import pygame, aubio, random, time, copy, math
 from pygamegame import PygameGame
 from Ship import Ship
 from Bullet import *
@@ -149,6 +149,7 @@ class SingingSpaceInvaders(PygameGame):
 
         #move bullets
         self.pitchBulletGroup.update(self.width, self.height)
+
         self.alienBulletGroup.update(self.width, self.height)
 
         self.barrierGroups.update()
@@ -158,6 +159,8 @@ class SingingSpaceInvaders(PygameGame):
         self.fireAlienBullets(dt)
         #move aliens
         self.moveAliens(dt)
+
+
 
     def gameOverTimerFired(self,dt):
         self.alienGroup.empty()
@@ -247,7 +250,21 @@ class SingingSpaceInvaders(PygameGame):
             for alien in frontRowAliens:
                 coinFlip = random.randint(0,chanceOfFiring)
                 if coinFlip == chanceOfFiring:
-                    self.alienBulletGroup.add(Bullet(alien.x,alien.y, (0,1)))
+                    vector = (0,1)
+                    shipX, shipY = self.shipGroup.sprites()[0].getPos()
+                    if self.hardMode:
+                        #if hardmode, aim bullet at player
+                        vector = self.getBulletVector(alien.x,alien.y,
+                                                            shipX, shipY)
+                    self.alienBulletGroup.add(Bullet(alien.x,alien.y, vector))
+
+    def getBulletVector(self, alienX, alienY, shipX, shipY):
+        #return (dx,dy) vector tuple for bullet creation
+        dx0 = shipX - alienX
+        dy0 = shipY - alienY
+        angle = math.atan2(dy0,dx0)
+        return(math.cos(angle),math.sin(angle))
+
 
 
     def getFrontRowAliens(self):
