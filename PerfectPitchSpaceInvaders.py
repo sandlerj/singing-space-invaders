@@ -10,7 +10,7 @@ ctypes.windll.user32.SetProcessDPIAware()
 
 import pygame, aubio, random, time, copy, math
 from pygamegame import PygameGame
-from Ship import Ship
+from Ship import Ship, GyrussShip
 from Bullet import *
 from PitchDetectionObject import PitchDetectionObject
 from Alien import Alien
@@ -20,7 +20,7 @@ from Bricks import Brick
 
 class SingingSpaceInvaders(PygameGame): 
 
-    def __init__(self, width=700, height=1000, fps=30,
+    def __init__(self, width=800, height=1000, fps=30,
                                                     title="Space Invaders 112"):
         super().__init__(width, height, fps, title)
 
@@ -29,13 +29,13 @@ class SingingSpaceInvaders(PygameGame):
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
         self.shipStartX = self.width//2
-        self.shipStartY = self.height-Ship.image.get_height() * 1.5
+        self.shipStartY = self.height-Ship.height * 1.5
         self.ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
-        self.alienScaleFactor = 35 # alienWidth = screenWidth/scaleFactor
+        self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
         Alien.init(self.width, self.height, self.alienScaleFactor)
-        self.baseAlienMoveWaitTime = 2000
+        self.baseAlienMoveWaitTime = 4000
 
         self.brickScaleFactor = .2
         Brick.init(self.width, self.height, self.brickScaleFactor)
@@ -75,7 +75,9 @@ class SingingSpaceInvaders(PygameGame):
             "easyButton.png"))
         self.guiImageDict["hardButton"] = pygame.image.load(os.path.join("GUI",
             "hardButton.png"))
-        spacer = 3
+        self.guiImageDict["gyrussButton"] = pygame.image.load(os.path.join(\
+            "GUI", "gyrussButton.png"))
+        spacer = 4.5
         self.easyButtonRect = self.guiImageDict['easyButton'].get_rect()
         self.easyButtonRect.move_ip((self.width//2 - \
             self.guiImageDict["easyButton"].get_width()//2),
@@ -85,7 +87,12 @@ class SingingSpaceInvaders(PygameGame):
         self.hardButtonRect.move_ip((self.width//2 - \
             self.guiImageDict["hardButton"].get_width()//2),
             (self.height - self.guiImageDict['hardButton'].get_height()\
-                * (spacer/2)))
+                * (spacer / 3 * 2)))
+        self.gyrussButtonRect = self.guiImageDict['gyrussButton'].get_rect()
+        self.gyrussButtonRect.move_ip((self.width//2 - \
+            self.guiImageDict["gyrussButton"].get_width()//2),
+            (self.height - self.guiImageDict['gyrussButton'].get_height()\
+                * (spacer/3)))
 
         
 
@@ -103,7 +110,7 @@ class SingingSpaceInvaders(PygameGame):
 
     def textFontInit(self):
         # Helper for main init to handle font related things
-        self.fontSize = Ship.image.get_height()//2
+        self.fontSize = Ship.height//2
         self.fontColor = (255,255,255)
         # Visitor font by Ænigma at https://www.dafont.com/visitor.font
         self.gameFont = pygame.font.Font("Font" + os.sep + "visitor1.ttf",
@@ -119,67 +126,9 @@ class SingingSpaceInvaders(PygameGame):
         self.gameMode = 'game mode'
         self.gameOverMode = 'game over mode'
         self.pauseMode = 'pause mode'
+        self.gyrussMode = 'gyruss mode'
         self.mode = self.menuMode
         self.hardMode = False
-
-    def timerFired(self, dt):
-        # Main timer fired which dispatches to mode specific tF
-        if self.mode == self.gameMode: self.gameTimerFired(dt)
-        elif self.mode == self.gameOverMode: self.gameOverTimerFired(dt)
-        elif self.mode == self.menuMode: self.menuTimerFired(dt)
-        elif self.mode == self.pauseMode: self.pauseTimerFired(dt)
-
-    def menuTimerFired(self, dt):
-        pass
-
-    def pauseTimerFired(self, dt):
-        pass
-
-    def gameTimerFired(self, dt):
-        self.checkForNewLevel()
-        self.checkGameOver()
-                
-        #check collisons between aliens and player's bullets
-        self.bulletAlienCollisions()
-        self.alienBulletPlayerCollisions()
-        self.bulletBarrierCollisions()
-
-        # Ship moved in timer fired for steady movement based on held keys
-        self.shipGroup.update(self.isKeyPressed, self.width, self.height)
-
-        #move bullets
-        self.pitchBulletGroup.update(self.width, self.height)
-
-        self.alienBulletGroup.update(self.width, self.height)
-
-        self.barrierGroups.update()
-
-        #fire player and alien bullets
-        self.bulletFiring(dt) 
-        self.fireAlienBullets(dt)
-        #move aliens
-        self.moveAliens(dt)
-
-
-
-    def gameOverTimerFired(self,dt):
-        self.alienGroup.empty()
-        self.barrierGroups.empty()
-        self.alienBulletGroup.empty()
-        self.pitchBulletGroup.empty()
-        self.shipGroup.empty()
-
-    def checkGameOver(self):
-        # Check if the game is over, whether because alieans got down to the
-        #   player, or because player has <0 lives
-        alienPastPlayerY = False
-        for alien in self.getFrontRowAliens():
-            if alien.y + alien.image.get_height()//2 >= \
-            self.shipStartY - Ship.height//2:
-                alienPastPlayerY = True
-        if alienPastPlayerY or self.playerLives < 0:
-            self.mode = self.gameOverMode
-
 
     def startNewGame(self, hardMode=False):
         #starts a new game and takes flag for hardMode
@@ -208,7 +157,106 @@ class SingingSpaceInvaders(PygameGame):
         self.playerScore = 0
         self.populateWithAliens()
         self.placeBarriers(self.startingBarriers)
-        self.shipGroup.add(copy.copy(self.ship))
+        self.shipGroup.add(self.ship)
+
+    def gyrussStartNewGame(self):
+        # Starts a new game in gyruss mode
+        self.mode = self.gyrussMode
+
+        self.bulletCoolDownTimer = 0
+        self.alienBulletTimer = 0
+
+        self.pointsPerKill = 10
+        self.playerLevel = 0
+        self.playerLives = 3
+        self.playerScore = 0
+        self.gyrussPopulateWithAliens()
+        playerPosR = 0.45
+        self.shipGroup.add(GyrussShip(playerPosR, self.width, self.height))
+
+    def gyrussPopulateWithAliens(self):
+        pass
+
+#Timerfired functions
+
+    def timerFired(self, dt):
+        # Main timer fired which dispatches to mode specific tF
+        if self.mode == self.gameMode: self.gameTimerFired(dt)
+        elif self.mode == self.gameOverMode: self.gameOverTimerFired(dt)
+        elif self.mode == self.menuMode: self.menuTimerFired(dt)
+        elif self.mode == self.pauseMode: self.pauseTimerFired(dt)
+        elif self.mode == self.gyrussMode: self.gyrussTimerFired(dt)
+
+    def menuTimerFired(self, dt):
+        pass
+
+    def pauseTimerFired(self, dt):
+        pass
+
+    def gameTimerFired(self, dt):
+        self.checkForNewLevel()
+        self.checkGameOver()
+                
+        #check collisons between aliens and player's bullets
+        self.bulletAlienCollisions()
+        self.alienBulletPlayerCollisions()
+        self.bulletBarrierCollisions()
+
+        # Ship moved in timer fired for steady movement based on held keys
+        self.shipGroup.update(self.isKeyPressed, self.width, self.height)
+
+        #move bullets
+        self.pitchBulletGroup.update(self.width, self.height, False)
+
+        self.alienBulletGroup.update(self.width, self.height, False)
+
+        self.barrierGroups.update()
+
+        #fire player and alien bullets
+        self.bulletFiring(dt) 
+        self.fireAlienBullets(dt)
+        #move aliens
+        self.moveAliens(dt)
+
+    def gyrussTimerFired(self, dt):
+        #self.checkForNewLevel()
+        self.checkGyrussGameOver()
+
+        self.bulletAlienCollisions()
+        self.alienBulletPlayerCollisions()
+
+        self.gyrussFireAlienBullets(dt)
+        self.bulletFiring(dt, gyruss=True)
+
+        self.shipGroup.update(self.isKeyPressed, self.width, self.height)
+
+        self.pitchBulletGroup.update(self.width, self.height, True)
+
+    def gameOverTimerFired(self,dt):
+        self.alienGroup.empty()
+        self.barrierGroups.empty()
+        self.alienBulletGroup.empty()
+        self.pitchBulletGroup.empty()
+        self.shipGroup.empty()
+
+# Helpers in timerFireds
+
+    def checkGameOver(self):
+        # Check if the game is over, whether because alieans got down to the
+        #   player, or because player has <0 lives
+        alienPastPlayerY = False
+        for alien in self.getFrontRowAliens():
+            if alien.y + alien.image.get_height()//2 >= \
+            self.shipStartY - Ship.height//2:
+                alienPastPlayerY = True
+        if alienPastPlayerY or self.playerLives < 0:
+            self.mode = self.gameOverMode
+
+    def checkGyrussGameOver(self):
+        if self.playerLives < 0:
+            self.mode = self.gameOverMode
+
+
 
     def checkForNewLevel(self):
         #checks if new level should be started and takes appropriate action
@@ -258,10 +306,27 @@ class SingingSpaceInvaders(PygameGame):
                                                             shipX, shipY)
                     self.alienBulletGroup.add(Bullet(alien.x,alien.y, vector))
 
-    def getBulletVector(self, alienX, alienY, shipX, shipY):
+    def gyrussFireAlienBullets(self, dt):
+        # Possibly fire alien bullets every interval, and reset timer
+        alienBulletCoolDownTime = 2000
+        chanceOfFiring = 5
+        self.alienBulletTimer += dt
+        if self.alienBulletTimer > alienBulletCoolDownTime:
+            self.alienBulletTimer = 0
+            for alien in self.alienGroup:
+                coinFlip = random.randint(0,chanceOfFiring)
+                if coinFlip == chanceOfFiring:
+                    vector = (0,1)
+                    shipX, shipY = self.shipGroup.sprites()[0].getPos()
+                    #if hardmode, aim bullet at player
+                    vector = self.getBulletVector(alien.x,alien.y,
+                                                        shipX, shipY)
+                    self.alienBulletGroup.add(Bullet(alien.x,alien.y, vector))
+
+    def getBulletVector(self, shooterX, shooterY, targetX, targetY):
         #return (dx,dy) vector tuple for bullet creation
-        dx0 = shipX - alienX
-        dy0 = shipY - alienY
+        dx0 = targetX - shooterX
+        dy0 = targetY - shooterY
         angle = math.atan2(dy0,dx0)
         return(math.cos(angle),math.sin(angle))
 
@@ -284,7 +349,7 @@ class SingingSpaceInvaders(PygameGame):
         return list(frontRowAliens.values())
 
 
-    def bulletFiring(self,dt):
+    def bulletFiring(self,dt, gyruss=False):
         #fires bullets intermitently when there's sound input
         self.bulletCoolDownTimer += dt
         #only fire a bullet at most every...
@@ -296,9 +361,21 @@ class SingingSpaceInvaders(PygameGame):
             scale = self.midiScale) and \
             self.pitchObject.volumeInRange(self.minimumVolume):
                 # If so, fire new bullet
-                self.firePitchBullet(self.pitchObject.getNote())
+                if not gyruss:
+                    self.firePitchBullet(self.pitchObject.getNote())
+                else:
+                    vector = self.getBulletVector(self.shipGroup.sprites()[0].x,
+                        self.shipGroup.sprites()[0].y, 
+                        self.width//2, self.height//2)
+                    self.firePitchBullet(self.pitchObject.getNote(), vector)
                 #reset cool down timer
                 self.bulletCoolDownTimer = 0
+
+    def firePitchBullet(self, midiVal, vector=(0,-1)):
+        # Given midi val will fire a pitch bullet from ship pos
+        self.pitchBulletGroup.add(PitchBullet(self.shipGroup.sprites()[0].x,
+                                    self.shipGroup.sprites()[0].y,
+                                    vector, midiVal))
 
     def moveAliens(self,dt):
         #helper method to move aliens as a unit
@@ -347,6 +424,8 @@ class SingingSpaceInvaders(PygameGame):
                         brick.getHit()
 
 
+## Keypressed
+
     def keyPressed(self, keyCode, modifier):
         #Key pressed dispatch
         if self.mode == self.gameMode: self.gameKeyPressed(keyCode, modifier)
@@ -355,10 +434,11 @@ class SingingSpaceInvaders(PygameGame):
         elif self.mode == self.menuMode: pass
         elif self.mode == self.pauseMode: self.pauseKeyPressed(keyCode,
             modifier)
+        elif self.mode == self.gyrussMode: self.gyrussKeyPressed(keyCode,
+            modifier)
 
     def pauseKeyPressed(self, keyCode, modifier):
         #If any key is pressed, go to gameMode
-        self.dirtyRects.append(pygame.rect.Rect(0,0,self.width, self.height))
         self.mode = self.gameMode
 
     def gameOverKeyPressed(self, keyCode, modifier):
@@ -366,6 +446,7 @@ class SingingSpaceInvaders(PygameGame):
         self.mode = self.menuMode
 
     def gameKeyPressed(self, keyCode, modifier):
+        ## NB: player movement handled in timerfired
         if keyCode == pygame.K_p:
             self.mode = self.pauseMode
         #The rest currently is debug code
@@ -376,26 +457,34 @@ class SingingSpaceInvaders(PygameGame):
         elif keyCode == pygame.K_j:
             self.mode = self.gameOverMode
 
-    def firePitchBullet(self, midiVal):
-        # Given midi val will fire a pitch bullet from ship pos
-        self.pitchBulletGroup.add(PitchBullet(self.shipGroup.sprites()[0].x,
-                                    self.shipGroup.sprites()[0].y,
-                                    (0,-1), midiVal))
+    def gyrussKeyPressed(self, keyCode, modifier):
+        if keyCode == pygame.K_k:
+            self.shipGroup.empty()
+            self.mode = self.gameOverMode
 
-    def drawScoreText(self, screen):
-        # draws score text at bottom left
-        text = "Score: %d" % self.playerScore
-        dest = self.textSideBuffer, self.bottomTextY
-        textSurf = self.gameFont.render(text, True, self.fontColor)
-        dirty = screen.blit(textSurf, dest)
-        return dirty
 
-    def drawLivesText(self, screen):
-        # Draws lives text at bottom right
-        text = "Lives: %d" % self.playerLives
-        textSurf = self.gameFont.render(text, True, self.fontColor)
-        bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
-        return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
+## Mouse Pressed
+        
+    def mousePressed(self, x, y):
+        # Mouse currently only used in menu mode
+        if self.mode == self.menuMode: self.menuMousePressed(x,y)
+        else: pass
+
+    def menuMousePressed(self, x, y):
+        #check if clicked inside buttons
+        # Following line included to add whole screen to list of dirty rects
+        # to be updated:
+        self.dirtyRects.append(pygame.rect.Rect(0,0,self.width, self.height))
+        if self.easyButtonRect.collidepoint(x,y):
+            self.hardMode = False
+            self.startNewGame(self.hardMode)
+        elif self.hardButtonRect.collidepoint(x,y):
+            self.hardMode = True
+            self.startNewGame(self.hardMode)
+        elif self.gyrussButtonRect.collidepoint(x,y):
+            self.gyrussStartNewGame()
+
+## Redraw All
 
     def redrawAll(self, screen):
         # Redraw all dispatch
@@ -403,6 +492,16 @@ class SingingSpaceInvaders(PygameGame):
         elif self.mode == self.gameOverMode: self.gameOverRedrawAll(screen)
         elif self.mode == self.pauseMode: self.pauseRedrawAll(screen)
         elif self.mode == self.menuMode: self.menuRedrawAll(screen)
+        elif self.mode == self.gyrussMode: self.gyrussRedrawAll(screen)
+
+    def gyrussRedrawAll(self, screen):
+        screen.blit(self.background, (0,0))
+        self.dirtyRects.extend(self.shipGroup.draw(screen))
+        self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
+        self.dirtyRects.append(self.drawScoreText(screen))
+        self.dirtyRects.append(self.drawLivesText(screen))
+        pygame.display.update(self.dirtyRects)
+        self.dirtyRects.clear()
 
     def pauseRedrawAll(self, screen):
         pauseImage = self.guiImageDict['helpScreen']
@@ -446,22 +545,28 @@ class SingingSpaceInvaders(PygameGame):
                 bufferY))
         screen.blit(self.guiImageDict['easyButton'], self.easyButtonRect)
         screen.blit(self.guiImageDict['hardButton'], self.hardButtonRect)
+        screen.blit(self.guiImageDict['gyrussButton'], self.gyrussButtonRect)
 
         pygame.display.flip()
-        
-    def mousePressed(self, x, y):
-        # Mouse currently only used in menu mode
-        if self.mode == self.menuMode: self.menuMousePressed(x,y)
-        else: pass
 
-    def menuMousePressed(self, x, y):
-        #check if clicked inside buttons
-        if self.easyButtonRect.collidepoint(x,y):
-            self.hardMode = False
-            self.startNewGame(self.hardMode)
-        elif self.hardButtonRect.collidepoint(x,y):
-            self.hardMode = True
-            self.startNewGame(self.hardMode)
+## Redraw helpers for game screen text;
+    def drawScoreText(self, screen):
+        # draws score text at bottom left
+        text = "Score: %d" % self.playerScore
+        dest = self.textSideBuffer, self.bottomTextY
+        textSurf = self.gameFont.render(text, True, self.fontColor)
+        dirty = screen.blit(textSurf, dest)
+        return dirty
+
+    def drawLivesText(self, screen):
+        # Draws lives text at bottom right
+        text = "Lives: %d" % self.playerLives
+        textSurf = self.gameFont.render(text, True, self.fontColor)
+        bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
+        return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
+
+
+## Helpers for normal game alien movement
 
     def getLeftmostAlien(self):
         #return left side of left-most alien rect
@@ -526,6 +631,8 @@ class SingingSpaceInvaders(PygameGame):
                 if rand:
                     note = random.choice(self.midiScale)
                 self.alienGroup.add(Alien(cx,cy, note))
+
+## Barrier building helpers: 
 
     def placeBarriers(self, numBarriers):
         # Adds barriers (non-pygame grouping of brick sprites) to barrierGroups

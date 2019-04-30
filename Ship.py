@@ -5,38 +5,44 @@
 # https://qwewy.gitbooks.io/pygame-module-manual/tutorials/using-sprites.html
 
 
-import pygame, os
+import pygame, os, math, copy
 
 class Ship(pygame.sprite.Sprite):
     # Player ship class from pygame sprite
     @staticmethod
-    def init(screenWidth, screenHeight, scaleFactor=15):
-        #loads ship and scales to screen
+    def init(screenWidth, screenHeight, scaleFactor=20):
+        #loads ships and scales to screen
         # Scale factor determines size based on width
         # Ship image from https://www.kisspng.com/
         #   png-galaga-galaxian-golden-age-of-arcade-video-games-a-1052746/
         #   download-png.html
-        Ship.image = pygame.image.load(os.path.join("Photos",
-                                                 "ship.png")).convert_alpha()
+        Ship.imageDict = {}
+        # Ship.image = pygame.image.load(os.path.join("Photos",
+        #                                          "ship.png")).convert_alpha()
         # Width/height ratio used to scale ship based primarily on width
         # but maintain aspect ratio
-        widthHeightRatio = Ship.image.get_width() / Ship.image.get_height()
 
-        Ship.image = pygame.transform.scale(Ship.image,
+        for img in os.listdir(os.path.join("Photos", "Ships")):
+            tmpImage = pygame.image.load(os.path.join("Photos", "Ships", img))\
+                .convert_alpha()
+            widthHeightRatio = tmpImage.get_width() / tmpImage.get_height()
+            Ship.imageDict[img] = pygame.transform.scale(tmpImage,
                     (int(screenWidth//scaleFactor * widthHeightRatio),
                         screenWidth//scaleFactor))
-        Ship.width, Ship.height = Ship.image.get_size()
-        #mask made here to speed up collision checking
-        Ship.mask = pygame.mask.from_surface(Ship.image)
 
 
-    def __init__(self, x, y):
+
+        # Ship width/height sometimes used as a unit in mainfile. Set to be 
+        #   default image
+        Ship.width, Ship.height = Ship.imageDict['ship.png'].get_size()
+
+
+    def __init__(self, x, y, img='ship.png'):
         # initialize ship
         super().__init__()
         self.x = x
         self.y = y
-        self.image = Ship.image
-        self.mask = Ship.mask
+        self.image = Ship.imageDict[img]
         self.width, self.height = self.image.get_size()
         self.rect = self.image.get_rect()
         self.updateRect()
@@ -70,3 +76,35 @@ class Ship(pygame.sprite.Sprite):
     def getPos(self):
         #returns tuple of x,y coords
         return (self.x, self.y)
+
+class GyrussShip(Ship):
+    #Ship used for gyruss game
+    def __init__(self, r, screenWidth, screenHeight, img='ship.png'):
+        self.startAngle = 90
+        self.angle = math.radians(self.startAngle)
+        self.shipRadius = r
+        self.x = screenWidth//2 + min(screenWidth, screenHeight) * \
+            self.shipRadius * math.cos(self.angle)
+        self.y = screenHeight//2 + min(screenWidth, screenHeight) * \
+            self.shipRadius * math.sin(self.angle)
+        super().__init__(self.x,self.y,img)
+        self.baseImage = copy.copy(self.image)
+
+    def update(self, keysDown, screenWidth, screenHeight):
+        angleIncrement = math.radians(5)
+        dA = 0
+        if keysDown(pygame.K_LEFT) and keysDown(pygame.K_RIGHT):
+            dA = 0
+        elif keysDown(pygame.K_LEFT):
+            dA += angleIncrement
+        elif keysDown(pygame.K_RIGHT):
+            dA -= angleIncrement
+
+        self.angle += dA
+        self.x = screenWidth//2 + min(screenWidth, screenHeight) * self.shipRadius\
+            * math.cos(self.angle)
+        self.y = screenHeight//2 + min(screenWidth, screenHeight) * self.shipRadius\
+            * math.sin(self.angle)
+        self.image = pygame.transform.rotate(self.baseImage, 
+            -(math.degrees(self.angle) - self.startAngle))
+        self.updateRect()

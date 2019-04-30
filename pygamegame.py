@@ -5,7 +5,7 @@ created by Lukas Peraza
 use this code in your term project if you want
 https://qwewy.gitbooks.io/pygame-module-manual/chapter1/framework.html
 '''
-import pygame
+import pygame,os
 
 
 class PygameGame(object):
@@ -58,6 +58,8 @@ class PygameGame(object):
         screen = pygame.display.set_mode((self.width, self.height))
         # set the title of the window
         pygame.display.set_caption(self.title)
+        pygame.display.set_icon(pygame.image.load(os.path.join('Photos','Ships',
+            'ship.png')))
 
         # stores all the keys currently being held down
         self._keys = dict()
