@@ -1,6 +1,9 @@
 #Joseph Sandler, jsandler, Section B
 # TP2 Deliverable
 
+import module_manager #by Austin Schick (see file for further citation)
+module_manager.review()
+
 # Primary game object containing run method.
 # Use SingingPitchSpaceInvaders().run() to run
 
