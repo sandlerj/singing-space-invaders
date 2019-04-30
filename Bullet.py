@@ -21,12 +21,16 @@ class Bullet(pygame.sprite.Sprite):
         Bullet.image.fill((255,255,255))
 
 
-    def __init__(self, x, y, vector):
+    def __init__(self, x, y, vector, color=None):
         # Set up bullet position and direction
         super().__init__()
         self.x = x
         self.y = y
         self.image = copy.copy(Bullet.image) #prevent aliasing
+        # Based on vector (angle via unit circle point coords), rotate image
+        #   to appropriate angle using inverse tangent
+        if color != None:
+            self.image.fill(color)
         self.image = pygame.transform.rotate(self.image,
             math.degrees(math.atan2(*vector)))
         self.width, self.height = self.image.get_size()
@@ -47,8 +51,10 @@ class Bullet(pygame.sprite.Sprite):
         self.x += self.dx * self.speed
         self.y += self.dy * self.speed
         # round pos to int because whole pixels
-        self.x, self.y = (roundHalfUp((self.x).real), roundHalfUp((self.y).real))
+        self.x, self.y = (roundHalfUp((self.x).real), 
+                            roundHalfUp((self.y).real))
         self.updateRect()
+
         if self.x < 0 or self.x > screenWidth or self.y < 0 or \
             self.y >screenHeight:
             self.kill()
@@ -67,6 +73,9 @@ class PitchBullet(Bullet):
         self.note = note % twelveToneScaleLen #storing note as pitch w/o octave, 
         # ranging 0 - 11, where 0 is C and 11 is B
         self.image.fill((colorByNote(self.note)))
+        super().__init__(x,y,vector, color=colorByNote(self.note))
+
+
 
 def colorByNote(note):
     # Determine color based on pitch class. White color pitches included for
@@ -94,3 +103,8 @@ def roundHalfUp(d):
     import decimal
     rounding = decimal.ROUND_HALF_UP
     return int(decimal.Decimal(d).to_integral_value(rounding=rounding))
+
+
+def distance(x0,y0,x1,y1):
+    result = ((x1-x0)**2 + (y1-y0)**2)**0.5
+    return result

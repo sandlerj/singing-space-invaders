@@ -171,11 +171,21 @@ class SingingSpaceInvaders(PygameGame):
         self.playerLives = 3
         self.playerScore = 0
         self.gyrussPopulateWithAliens()
-        playerPosR = 0.45
-        self.shipGroup.add(GyrussShip(playerPosR, self.width, self.height))
+        self.playerPosR = 0.90
+        self.shipGroup.add(GyrussShip(self.playerPosR, self.width, self.height))
 
     def gyrussPopulateWithAliens(self):
-        pass
+        alienPosR = .3
+        numAliens = 12
+        for alien in range(numAliens):
+            angle = (2*math.pi)*(alien/numAliens)
+            alienX = self.width//2 + \
+                min(self.width, self.height)//2 * alienPosR * math.cos(angle)
+            alienY = self.height//2 - \
+                min(self.width, self.height)//2 * alienPosR * math.sin(angle)
+            note = random.choice(self.midiScale)
+            self.alienGroup.add(Alien(alienX,alienY, note))
+
 
 #Timerfired functions
 
@@ -206,9 +216,9 @@ class SingingSpaceInvaders(PygameGame):
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
 
         #move bullets
-        self.pitchBulletGroup.update(self.width, self.height, False)
+        self.pitchBulletGroup.update(self.width, self.height)
 
-        self.alienBulletGroup.update(self.width, self.height, False)
+        self.alienBulletGroup.update(self.width, self.height)
 
         self.barrierGroups.update()
 
@@ -219,18 +229,20 @@ class SingingSpaceInvaders(PygameGame):
         self.moveAliens(dt)
 
     def gyrussTimerFired(self, dt):
-        #self.checkForNewLevel()
+        self.gyrussCheckForNewLevel()
         self.checkGyrussGameOver()
 
         self.bulletAlienCollisions()
-        self.alienBulletPlayerCollisions()
+        self.alienBulletPlayerCollisions(gyruss=True)
 
         self.gyrussFireAlienBullets(dt)
         self.bulletFiring(dt, gyruss=True)
+        self.gyrussFireAlienBullets(dt)
 
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
-
-        self.pitchBulletGroup.update(self.width, self.height, True)
+        self.alienBulletGroup.update(self.width, self.height)
+        self.pitchBulletGroup.update(self.width, self.height)
+        self.gyrussCenterBulletKill()
 
     def gameOverTimerFired(self,dt):
         self.alienGroup.empty()
@@ -240,6 +252,23 @@ class SingingSpaceInvaders(PygameGame):
         self.shipGroup.empty()
 
 # Helpers in timerFireds
+
+    def gyrussCheckForNewLevel(self):
+        if len(self.alienGroup) == 0:
+            self.playerLives += 1
+            time.sleep(2)
+            self.pitchBulletGroup.empty()
+            self.alienBulletGroup.empty()
+            self.gyrussPopulateWithAliens()
+            self.playerLevel += 1
+
+    def gyrussCenterBulletKill(self):
+        size = 15
+        killZone = pygame.Rect(self.width//2-size, self.height//2-size,
+                                2*size, 2*size)
+        for bullet in self.pitchBulletGroup:
+            if killZone.colliderect(bullet.rect): bullet.kill()
+
 
     def checkGameOver(self):
         # Check if the game is over, whether because alieans got down to the
@@ -275,7 +304,7 @@ class SingingSpaceInvaders(PygameGame):
                     alienSpeedIncrement * self.playerLevel
 
 
-    def alienBulletPlayerCollisions(self):
+    def alienBulletPlayerCollisions(self, gyruss=False):
         # Checks collisions between player and alien bullets, kills player and
         #   takes a life away.
         pygame.sprite.groupcollide(self.shipGroup, self.alienBulletGroup,
@@ -284,7 +313,12 @@ class SingingSpaceInvaders(PygameGame):
             self.pitchBulletGroup.empty()
             self.alienBulletGroup.empty()
             time.sleep(1) #If player dies, pause for a second and then respawn
-            self.shipGroup.add(Ship(self.shipStartX, self.shipStartY))
+            if not gyruss:
+                self.shipGroup.add(Ship(self.shipStartX, self.shipStartY))
+            else:
+                self.shipGroup.add(GyrussShip(self.playerPosR, self.width,
+                    self.height))
+
             self.playerLives -= 1
 
     def fireAlienBullets(self, dt):
@@ -439,6 +473,7 @@ class SingingSpaceInvaders(PygameGame):
 
     def pauseKeyPressed(self, keyCode, modifier):
         #If any key is pressed, go to gameMode
+        self.dirtyRects.append(pygame.Rect(0,0,self.width,self.height))
         self.mode = self.gameMode
 
     def gameOverKeyPressed(self, keyCode, modifier):
@@ -500,6 +535,10 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
         self.dirtyRects.append(self.drawScoreText(screen))
         self.dirtyRects.append(self.drawLivesText(screen))
+        self.dirtyRects.extend(self.alienGroup.draw(screen))
+        self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
+
+
         pygame.display.update(self.dirtyRects)
         self.dirtyRects.clear()
 
@@ -711,4 +750,3 @@ class SingingSpaceInvaders(PygameGame):
 
 if __name__ == "__main__":
     SingingSpaceInvaders().run()
-

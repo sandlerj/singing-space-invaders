@@ -10,7 +10,7 @@ import pygame, os, math, copy
 class Ship(pygame.sprite.Sprite):
     # Player ship class from pygame sprite
     @staticmethod
-    def init(screenWidth, screenHeight, scaleFactor=20):
+    def init(screenWidth, screenHeight, scaleFactor=18):
         #loads ships and scales to screen
         # Scale factor determines size based on width
         # Ship image from https://www.kisspng.com/
@@ -101,10 +101,10 @@ class GyrussShip(Ship):
             dA -= angleIncrement
 
         self.angle += dA
-        self.x = screenWidth//2 + min(screenWidth, screenHeight) * self.shipRadius\
-            * math.cos(self.angle)
-        self.y = screenHeight//2 + min(screenWidth, screenHeight) * self.shipRadius\
-            * math.sin(self.angle)
+        self.x = screenWidth//2 + min(screenWidth, screenHeight)//2\
+            * self.shipRadius * math.cos(self.angle)
+        self.y = screenHeight//2 + min(screenWidth, screenHeight)//2\
+            * self.shipRadius * math.sin(self.angle)
         self.image = pygame.transform.rotate(self.baseImage, 
             -(math.degrees(self.angle) - self.startAngle))
         self.updateRect()
