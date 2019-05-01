@@ -18,22 +18,24 @@ from Bullet import *
 from PitchDetectionObject import PitchDetectionObject
 from Alien import Alien
 from Bricks import Brick
+
 # PygameGame superclass from Lukas Peraza's optional lecture on Pygame
 # https://qwewy.gitbooks.io/pygame-module-manual/chapter1/framework.html
 
-class SingingSpaceInvaders(PygameGame): 
-
+class SingingSpaceInvaders(PygameGame):
+    
     def __init__(self, width=800, height=1000, fps=30,
                                                     title="Space Invaders 112"):
         super().__init__(width, height, fps, title)
 
     def init(self):
         self.guiInit()
+        self.loadSelectionButtons()
         Ship.init(self.width,self.height) #inits ship image based on screen size
         #places ship near bottom of screen
+        self.shipSelection = 'ship.png'
         self.shipStartX = self.width//2
         self.shipStartY = self.height-Ship.height * 1.5
-        self.ship = Ship(self.shipStartX, self.shipStartY)
         Bullet.init(self.width, self.height) #Inits bullet image based on screen
 
         self.alienScaleFactor = 40 # alienWidth = screenWidth/scaleFactor
@@ -73,6 +75,8 @@ class SingingSpaceInvaders(PygameGame):
             "helpScreen.png"))
         self.guiImageDict["title"] = pygame.image.load(os.path.join("GUI",
             "logo.png"))
+        self.guiImageDict['gyrussHelpScreen'] = pygame.image.load(os.path.join(\
+            "GUI", "gyrussHelpScreen.png"))
 
         self.guiImageDict["easyButton"] = pygame.image.load(os.path.join("GUI",
             "easyButton.png"))
@@ -97,6 +101,24 @@ class SingingSpaceInvaders(PygameGame):
             (self.height - self.guiImageDict['gyrussButton'].get_height()\
                 * (spacer/3)))
 
+    def loadSelectionButtons(self):
+        for img in os.listdir(os.path.join("GUI", "SelectionButtons")):
+            self.guiImageDict[img] = pygame.image.load(os.path.join("GUI",
+                "SelectionButtons", img))
+        xBuffer = 75
+        yBuffer = -self.guiImageDict['easyButton'].get_height()//2
+        buttonWidth = self.guiImageDict['shipButton.png'].get_width()
+        buttonHeight = self.guiImageDict['shipButton.png'].get_height()
+        yStart = self.easyButtonRect.y - buttonHeight
+        self.nyanButtonRect = pygame.Rect(self.width//2 - buttonWidth//2,
+            yStart + yBuffer,
+            buttonWidth, buttonHeight)
+        self.shipButtonRect = pygame.Rect(\
+            self.nyanButtonRect.x - xBuffer - buttonWidth, yStart + yBuffer,
+            buttonWidth, buttonHeight)
+        self.androidButtonRect = pygame.Rect(\
+            self.nyanButtonRect.x + xBuffer + buttonWidth, yStart + yBuffer,
+            buttonWidth, buttonHeight)
         
 
     def soundDetectionInit(self):
@@ -129,6 +151,7 @@ class SingingSpaceInvaders(PygameGame):
         self.gameMode = 'game mode'
         self.gameOverMode = 'game over mode'
         self.pauseMode = 'pause mode'
+        self.gyrussPauseMode = 'gyruss pause mode'
         self.gyrussMode = 'gyruss mode'
         self.mode = self.menuMode
         self.hardMode = False
@@ -160,11 +183,12 @@ class SingingSpaceInvaders(PygameGame):
         self.playerScore = 0
         self.populateWithAliens()
         self.placeBarriers(self.startingBarriers)
-        self.shipGroup.add(self.ship)
+        self.shipGroup.add(Ship(self.shipStartX, self.shipStartY,
+            img=self.shipSelection))
 
     def gyrussStartNewGame(self):
         # Starts a new game in gyruss mode
-        self.mode = self.gyrussMode
+        self.mode = self.gyrussPauseMode
 
         self.bulletCoolDownTimer = 0
         self.alienBulletTimer = 0
@@ -175,11 +199,12 @@ class SingingSpaceInvaders(PygameGame):
         self.playerScore = 0
         self.gyrussPopulateWithAliens()
         self.playerPosR = 0.90
-        self.shipGroup.add(GyrussShip(self.playerPosR, self.width, self.height))
+        self.shipGroup.add(GyrussShip(self.playerPosR, self.width, self.height,
+            img=self.shipSelection))
 
     def gyrussPopulateWithAliens(self):
-        alienPosR = .3
-        numAliens = 12
+        alienPosR = .35
+        numAliens = 15
         for alien in range(numAliens):
             angle = (2*math.pi)*(alien/numAliens)
             alienX = self.width//2 + \
@@ -199,6 +224,10 @@ class SingingSpaceInvaders(PygameGame):
         elif self.mode == self.menuMode: self.menuTimerFired(dt)
         elif self.mode == self.pauseMode: self.pauseTimerFired(dt)
         elif self.mode == self.gyrussMode: self.gyrussTimerFired(dt)
+        if self.mode == self.gyrussPauseMode: self.gyrussPauseTimerFired(dt)
+
+    def gyrussPauseTimerFired(self, dt):
+        pass
 
     def menuTimerFired(self, dt):
         pass
@@ -317,10 +346,11 @@ class SingingSpaceInvaders(PygameGame):
             self.alienBulletGroup.empty()
             time.sleep(1) #If player dies, pause for a second and then respawn
             if not gyruss:
-                self.shipGroup.add(Ship(self.shipStartX, self.shipStartY))
+                self.shipGroup.add(Ship(self.shipStartX, self.shipStartY, 
+                    img=self.shipSelection))
             else:
                 self.shipGroup.add(GyrussShip(self.playerPosR, self.width,
-                    self.height))
+                    self.height, img=self.shipSelection))
 
             self.playerLives -= 1
 
@@ -473,6 +503,12 @@ class SingingSpaceInvaders(PygameGame):
             modifier)
         elif self.mode == self.gyrussMode: self.gyrussKeyPressed(keyCode,
             modifier)
+        elif self.mode == self.gyrussPauseMode: self.gyrussPauseKeyPressed(\
+            keyCode, modifier)
+
+    def gyrussPauseKeyPressed(self, keyCode, modifier):
+        self.dirtyRects.append(pygame.Rect(0,0,self.width,self.height))
+        self.mode = self.gyrussMode
 
     def pauseKeyPressed(self, keyCode, modifier):
         #If any key is pressed, go to gameMode
@@ -499,6 +535,9 @@ class SingingSpaceInvaders(PygameGame):
         if keyCode == pygame.K_k:
             self.shipGroup.empty()
             self.mode = self.gameOverMode
+        if keyCode == pygame.K_p:
+            self.mode = self.gyrussPauseMode
+
 
 
 ## Mouse Pressed
@@ -521,6 +560,13 @@ class SingingSpaceInvaders(PygameGame):
             self.startNewGame(self.hardMode)
         elif self.gyrussButtonRect.collidepoint(x,y):
             self.gyrussStartNewGame()
+        elif self.shipButtonRect.collidepoint(x,y):
+            self.shipSelection = "ship.png"
+        elif self.nyanButtonRect.collidepoint(x,y):
+            self.shipSelection = "nyan.png"
+        elif self.androidButtonRect.collidepoint(x,y):
+            self.shipSelection = "android.png"
+        
 
 ## Redraw All
 
@@ -531,6 +577,14 @@ class SingingSpaceInvaders(PygameGame):
         elif self.mode == self.pauseMode: self.pauseRedrawAll(screen)
         elif self.mode == self.menuMode: self.menuRedrawAll(screen)
         elif self.mode == self.gyrussMode: self.gyrussRedrawAll(screen)
+        elif self.mode == self.gyrussPauseMode: 
+            self.gyrussPauseRedrawAll(screen)
+
+    def gyrussPauseRedrawAll(self, screen):
+        pauseImage = self.guiImageDict['gyrussHelpScreen']
+        screen.blit(pauseImage, (self.width//2 - pauseImage.get_width()//2,
+            self.height//2 - pauseImage.get_height()//2))
+        pygame.display.flip()
 
     def gyrussRedrawAll(self, screen):
         screen.blit(self.background, (0,0))
@@ -588,13 +642,46 @@ class SingingSpaceInvaders(PygameGame):
         screen.blit(self.guiImageDict['easyButton'], self.easyButtonRect)
         screen.blit(self.guiImageDict['hardButton'], self.hardButtonRect)
         screen.blit(self.guiImageDict['gyrussButton'], self.gyrussButtonRect)
-
+        self.drawSelectionButtons(screen)
+        self.charSelectText(screen)
         pygame.display.flip()
 
-## Redraw helpers for game screen text;
+##Helper method to draw ship selection buttons on main screen:
+
+    def drawSelectionButtons(self, screen):
+        #displays button and highlight if selected
+        if self.shipSelection == "ship.png":
+            screen.blit(self.guiImageDict['shipButton1.png'],
+                self.shipButtonRect)
+        else:
+            screen.blit(self.guiImageDict['shipButton.png'],
+                self.shipButtonRect)
+        if self.shipSelection == "nyan.png":
+            screen.blit(self.guiImageDict['nyanButton1.png'],
+                self.nyanButtonRect)
+        else:
+            screen.blit(self.guiImageDict['nyanButton.png'],
+                self.nyanButtonRect)
+        if self.shipSelection == "android.png":
+            screen.blit(self.guiImageDict['androidButton1.png'],
+                self.androidButtonRect)
+        else:
+            screen.blit(self.guiImageDict['androidButton.png'],
+                self.androidButtonRect)
+
+
+## Redraw helpers for  screen text:
+    def charSelectText(self, screen):
+        text = "CHOOSE YOUR SHIP"
+        textSurf = self.bigGameFont.render(text, True, self.fontColor)
+        yBuffer = 50
+        dest = self.width//2 - textSurf.get_width()//2, \
+            self.shipButtonRect.y - textSurf.get_height() - yBuffer
+        screen.blit(textSurf, dest)
+
     def drawScoreText(self, screen):
         # draws score text at bottom left
-        text = "Score: %d" % self.playerScore
+        text = "SCORE: %d" % self.playerScore
         dest = self.textSideBuffer, self.bottomTextY
         textSurf = self.gameFont.render(text, True, self.fontColor)
         dirty = screen.blit(textSurf, dest)
@@ -602,7 +689,7 @@ class SingingSpaceInvaders(PygameGame):
 
     def drawLivesText(self, screen):
         # Draws lives text at bottom right
-        text = "Lives: %d" % self.playerLives
+        text = "LIVES: %d" % self.playerLives
         textSurf = self.gameFont.render(text, True, self.fontColor)
         bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
         return screen.blit(textSurf, (bottomTextX, self.bottomTextY))
