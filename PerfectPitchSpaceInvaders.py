@@ -25,7 +25,7 @@ from Bricks import Brick
 class SingingSpaceInvaders(PygameGame):
     
     def __init__(self, width=800, height=1000, fps=30,
-                                                    title="Space Invaders 112"):
+                                                title="Singing Space Invaders"):
         super().__init__(width, height, fps, title)
 
     def init(self):
@@ -609,6 +609,11 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.pauseMode
         elif keyCode == pygame.K_c:
             self.cMajScale.play()
+        ##Shortcuts
+        elif keyCode == pygame.K_x:
+            self.mode = self.gameOverMode
+        elif keyCode == pygame.K_z:
+            self.alienGroup.empty()
 
     def gyrussKeyPressed(self, keyCode, modifier):
         ## NB: player movement handled in timerfired
@@ -616,6 +621,12 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.gyrussPauseMode
         elif keyCode == pygame.K_c:
             self.cMajScale.play()
+        ##Shortcuts
+        elif keyCode == pygame.K_x:
+            self.mode = self.gameOverMode
+        elif keyCode == pygame.K_z:
+            self.alienGroup.empty()
+
 
 
 
