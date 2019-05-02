@@ -69,6 +69,7 @@ class SingingSpaceInvaders(PygameGame):
             "cMajScale.wav"))
 
     def highScoresInit(self):
+        # Loads/creates highscrore text file in current dir
         self.hsPath = "highScores.txt"
         if self.hsPath not in os.listdir():
             writeFile(self.hsPath, emptyHighScores())
@@ -76,6 +77,7 @@ class SingingSpaceInvaders(PygameGame):
         highScoreRawContents = readFile(self.hsPath).splitlines()
         self.highScoreContents = []
         for line in highScoreRawContents:
+            #reads contents and breaks them up by the dividing token (@)
             self.highScoreContents.append(line.split('@'))
 
 
@@ -113,6 +115,7 @@ class SingingSpaceInvaders(PygameGame):
                 * (spacer/3)))
 
     def loadSelectionButtons(self):
+        #Loads buttons for selecting player character image
         for img in os.listdir(os.path.join("GUI", "SelectionButtons")):
             self.guiImageDict[img] = pygame.image.load(os.path.join("GUI",
                 "SelectionButtons", img))
@@ -218,9 +221,18 @@ class SingingSpaceInvaders(PygameGame):
             img=self.shipSelection))
 
     def gyrussPopulateWithAliens(self):
+        # adds aliens to alienGroup with xy coords in a circular fashion
         alienPosR = .35
-        numAliens = 10 + self.playerLevel
+        # Add additional aliens with every player level (up to maxExtraAliens)
+        maxExtraAliens = 18
+        if self.playerLevel <= maxExtraAliens:
+            addAliens = self.playerLevel
+        else:
+            addAliens = maxExtraAliens
+        numAliens = 10 + addAliens 
         for alien in range(numAliens):
+            # Similar to drawing numbers on a clock, loops through and 
+            #   determines alien pos using sin and cos angle vals
             angle = (2*math.pi)*(alien/numAliens)
             alienX = self.width//2 + \
                 min(self.width, self.height)//2 * alienPosR * math.cos(angle)
@@ -278,15 +290,17 @@ class SingingSpaceInvaders(PygameGame):
         self.moveAliens(dt)
 
     def gyrussTimerFired(self, dt):
+        # Timer fired for gyruss game
         self.gyrussCheckForNewLevel()
         self.checkGyrussGameOver()
 
         self.bulletAlienCollisions()
+        # checks for player collision with alien bullet. if player has lives 
+        #   left will kill and replace with new gyruss ship
         self.alienBulletPlayerCollisions(gyruss=True)
-
         self.gyrussFireAlienBullets(dt)
+        # Fires player bullets into center of screen
         self.bulletFiring(dt, gyruss=True)
-        self.gyrussFireAlienBullets(dt)
 
         self.shipGroup.update(self.isKeyPressed, self.width, self.height)
         self.alienBulletGroup.update(self.width, self.height)
@@ -294,6 +308,7 @@ class SingingSpaceInvaders(PygameGame):
         self.gyrussCenterBulletKill()
 
     def gameOverTimerFired(self,dt):
+        #Empty all off the groups
         self.alienGroup.empty()
         self.barrierGroups.empty()
         self.alienBulletGroup.empty()
@@ -303,6 +318,7 @@ class SingingSpaceInvaders(PygameGame):
 # Helpers in timerFireds
 
     def gyrussCheckForNewLevel(self):
+        # Checks for a new level and calls for a new gyruss level if needed
         if len(self.alienGroup) == 0:
             self.playerLives += 1
             time.sleep(2)
@@ -312,6 +328,7 @@ class SingingSpaceInvaders(PygameGame):
             self.playerLevel += 1
 
     def gyrussCenterBulletKill(self):
+        #removes bullets that have reached the center of the screen
         size = 15
         killZone = pygame.Rect(self.width//2-size, self.height//2-size,
                                 2*size, 2*size)
@@ -331,6 +348,7 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.gameOverMode
 
     def checkGyrussGameOver(self):
+        # Checks for game over conditions in gyruss mode (player has < 0 lives)
         if self.playerLives < 0:
             self.mode = self.gameOverMode
 
@@ -402,13 +420,14 @@ class SingingSpaceInvaders(PygameGame):
                 if coinFlip == chanceOfFiring:
                     vector = (0,1)
                     shipX, shipY = self.shipGroup.sprites()[0].getPos()
-                    #if hardmode, aim bullet at player
+                    #aim at player
                     vector = self.getBulletVector(alien.x,alien.y,
                                                         shipX, shipY)
                     self.alienBulletGroup.add(Bullet(alien.x,alien.y, vector))
 
     def getBulletVector(self, shooterX, shooterY, targetX, targetY):
-        #return (dx,dy) vector tuple for bullet creation
+        #return (dx,dy) vector tuple for bullet creation, given xy coords of
+        #   shooter and their target
         dx0 = targetX - shooterX
         dy0 = targetY - shooterY
         angle = math.atan2(dy0,dx0)
@@ -448,6 +467,7 @@ class SingingSpaceInvaders(PygameGame):
                 if not gyruss:
                     self.firePitchBullet(self.pitchObject.getNote())
                 else:
+                    # If in gyruss mode, aim bullets at center of screen
                     vector = self.getBulletVector(self.shipGroup.sprites()[0].x,
                         self.shipGroup.sprites()[0].y, 
                         self.width//2, self.height//2)
@@ -528,43 +548,59 @@ class SingingSpaceInvaders(PygameGame):
             self.highScoreScreenKeyPressed(keyCode, modifier)
 
     def highScoreNameEntryKeyPressed(self, keyCode, modifier):
+        # Manages keyboard entry of initials if player has new high score
         if len(self.playerInitials) < 3:
             #pygame key constants translate to key ascii vals
             if ord('a') <= keyCode <= ord('z'):
                 self.playerInitials += chr(keyCode)
         if keyCode == pygame.K_BACKSPACE:
+            #delete last letter
             self.playerInitials = self.playerInitials[:-1]
         if len(self.playerInitials) > 0:
+            #only go ahead if something was entered
             if keyCode == pygame.K_RETURN:
                 for i in range(len(self.highScoreContents)):
                     if self.playerScore > int(self.highScoreContents[i][1]):
                         self.highScoreContents.insert(i, [self.playerInitials,
                             str(self.playerScore)])
                         break
-                self.highScoreContents.pop()
+                self.highScoreContents.pop() #only keep ten scores
                 self.mode = self.highScoreScreenMode
 
     def highScoreScreenKeyPressed(self, keyCode, modifier):
+        # Go to menu when any key is pressed
         self.mode = self.menuMode
 
     def gyrussPauseKeyPressed(self, keyCode, modifier):
+        # pause keypressed method for gyruss game mode
+        # Add whole screen to list of rects to be updated in the game's dirty
+        #   rect update
         self.dirtyRects.append(pygame.Rect(0,0,self.width,self.height))
+        # When any key is pressed, go back to game
         self.mode = self.gyrussMode
 
     def pauseKeyPressed(self, keyCode, modifier):
+        # Pause keypressed for normal game
+        # Add whole screen to list of rects to be updated in the game's dirty
+        #   rect update
         #If any key is pressed, go to gameMode
         self.dirtyRects.append(pygame.Rect(0,0,self.width,self.height))
         self.mode = self.gameMode
 
     def gameOverKeyPressed(self, keyCode, modifier):
-        modeChangeFlag = False
+        # Key pressed for gameover mode
+        modeChangeFlag = False # Track whether a mode change has been called
         if self.hardMode and not self.isGyruss:
+            # Only go to name entry and score saving for standard hard mode
             for nameAndScore in self.highScoreContents:
+                # Check if player score is higher than any current scores
                 if self.playerScore > int(nameAndScore[1]):
+                    # If so go to name entry
                     self.mode = self.highScoreNameEntryMode
                     modeChangeFlag = True
                     break
         if not modeChangeFlag:
+            # Don't do this if already called for name entry mode
             self.mode = self.highScoreScreenMode
 
     def gameKeyPressed(self, keyCode, modifier):
@@ -573,17 +609,9 @@ class SingingSpaceInvaders(PygameGame):
             self.mode = self.pauseMode
         elif keyCode == pygame.K_c:
             self.cMajScale.play()
-        #The rest currently is debug code
-        elif keyCode == pygame.K_k:
-            self.shipGroup.empty()
-        elif keyCode == pygame.K_l:
-            self.alienGroup.empty()
-        elif keyCode == pygame.K_j:
-            self.mode = self.gameOverMode
 
     def gyrussKeyPressed(self, keyCode, modifier):
-        if keyCode == pygame.K_k:
-            self.shipGroup.empty()
+        ## NB: player movement handled in timerfired
         if keyCode == pygame.K_p:
             self.mode = self.gyrussPauseMode
         elif keyCode == pygame.K_c:
@@ -601,7 +629,7 @@ class SingingSpaceInvaders(PygameGame):
     def menuMousePressed(self, x, y):
         #check if clicked inside buttons
         # Following line included to add whole screen to list of dirty rects
-        # to be updated:
+        # to be updated when going to game which only updates dirty rects:
         self.dirtyRects.append(pygame.rect.Rect(0,0,self.width, self.height))
         if self.easyButtonRect.collidepoint(x,y):
             self.hardMode = False
@@ -636,6 +664,7 @@ class SingingSpaceInvaders(PygameGame):
             self.highScoreNameEntryRedrawAll(screen)
 
     def highScoreScreenRedrawAll(self, screen):
+        # Redraw all for highscore screen
         yBuffer = 50
         leftBuffer = 200
         rightBuffer = 200
@@ -644,6 +673,8 @@ class SingingSpaceInvaders(PygameGame):
         titleDest = (self.width//2 - hsText.get_width()//2, yBuffer)
         screen.blit(hsText, titleDest)
         for i in range(len(self.highScoreContents)):
+            # blit all the high scores in order.
+            # Determine values based on line number
             y = titleDest[1] + (hsText.get_height() + yBuffer) * (i + 1)
             initialsText = self.bigGameFont.render(self.highScoreContents[i][0],
                 True, self.fontColor)
@@ -653,9 +684,10 @@ class SingingSpaceInvaders(PygameGame):
             scoreX = self.width - rightBuffer - scoreText.get_width()
             screen.blit(initialsText, (initialsX, y))
             screen.blit(scoreText, (scoreX, y))
-        pygame.display.flip()
+        pygame.display.flip() # no reason to only dirty rect update
 
     def highScoreNameEntryRedrawAll(self, screen):
+        # redraw all for name entry screen. doesn't use dirty rect update
         titleText = self.bigGameFont.render('NEW HIGH SCORE',
             True, self.fontColor)
         instructionText = self.bigGameFont.render('ENTER YOUR INITIALS:', True,
@@ -679,17 +711,19 @@ class SingingSpaceInvaders(PygameGame):
                 yBuffer * numBuffers + titleText.get_height() * 2))
         screen.blit(hitEnterText,
             (self.width//2 - hitEnterText.get_width()//2,
-                self.height - yBuffer - hitEnterText.get_height()))
+                self.height - yBuffer - hitEnterText.get_height() * 2))
 
         pygame.display.flip()
 
     def gyrussPauseRedrawAll(self, screen):
+        # redraw all for gyruss pause screen.
         pauseImage = self.guiImageDict['gyrussHelpScreen']
         screen.blit(pauseImage, (self.width//2 - pauseImage.get_width()//2,
             self.height//2 - pauseImage.get_height()//2))
         pygame.display.flip()
 
     def gyrussRedrawAll(self, screen):
+        # redraw all for gyruss game.
         screen.blit(self.background, (0,0))
         self.dirtyRects.extend(self.shipGroup.draw(screen))
         self.dirtyRects.extend(self.pitchBulletGroup.draw(screen))
@@ -698,11 +732,12 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.extend(self.alienGroup.draw(screen))
         self.dirtyRects.extend(self.alienBulletGroup.draw(screen))
 
-
+        # Only updates dirty rects passed into update as list.
         pygame.display.update(self.dirtyRects)
-        self.dirtyRects.clear()
+        self.dirtyRects.clear() # clear out list for next frame
 
     def pauseRedrawAll(self, screen):
+        # redraw all for standard pause screen
         pauseImage = self.guiImageDict['helpScreen']
         screen.blit(pauseImage, (self.width//2 - pauseImage.get_width()//2,
             self.height//2 - pauseImage.get_height()//2))
@@ -725,6 +760,7 @@ class SingingSpaceInvaders(PygameGame):
         self.dirtyRects.clear()
 
     def gameOverRedrawAll(self, screen):
+        #redraw all for game over screen
         text = "GAME OVER"
         textSurf = self.bigGameFont.render(text, True, self.fontColor)
         screen.fill((0,0,0))
@@ -737,6 +773,7 @@ class SingingSpaceInvaders(PygameGame):
         pygame.display.flip()
 
     def menuRedrawAll(self, screen):
+        #redraw all for menu screen
         screen.fill((0,0,0))
         bufferY = 30
         screen.blit(self.guiImageDict['title'],
@@ -745,9 +782,10 @@ class SingingSpaceInvaders(PygameGame):
         screen.blit(self.guiImageDict['easyButton'], self.easyButtonRect)
         screen.blit(self.guiImageDict['hardButton'], self.hardButtonRect)
         screen.blit(self.guiImageDict['gyrussButton'], self.gyrussButtonRect)
-        self.drawSelectionButtons(screen)
+        #checks which button should be highlighted:
+        self.drawSelectionButtons(screen) 
         self.charSelectText(screen)
-        pygame.display.flip()
+        pygame.display.flip() #Update all, not just dirty rects
 
 ##Helper method to draw ship selection buttons on main screen:
 
@@ -773,8 +811,9 @@ class SingingSpaceInvaders(PygameGame):
                 self.androidButtonRect)
 
 
-## Redraw helpers for  screen text:
+## Redraw helpers for screen text:
     def charSelectText(self, screen):
+        # Text for title screen
         text = "CHOOSE YOUR SHIP"
         textSurf = self.bigGameFont.render(text, True, self.fontColor)
         yBuffer = 50
@@ -783,7 +822,7 @@ class SingingSpaceInvaders(PygameGame):
         screen.blit(textSurf, dest)
 
     def drawScoreText(self, screen):
-        # draws score text at bottom left
+        # draws score text at bottom left in game
         text = "SCORE: %d" % self.playerScore
         dest = self.textSideBuffer, self.bottomTextY
         textSurf = self.gameFont.render(text, True, self.fontColor)
@@ -791,7 +830,7 @@ class SingingSpaceInvaders(PygameGame):
         return dirty
 
     def drawLivesText(self, screen):
-        # Draws lives text at bottom right
+        # Draws lives text at bottom right in game
         text = "LIVES: %d" % self.playerLives
         textSurf = self.gameFont.render(text, True, self.fontColor)
         bottomTextX = self.width - textSurf.get_width() - self.textSideBuffer
@@ -847,7 +886,7 @@ class SingingSpaceInvaders(PygameGame):
 
 
     def populateWithAliens(self, rand=False):
-        # Puts aliens in top left corner of screen
+        # Puts aliens in top left corner of screen for standard game
         topBuffer = Alien.height//2
         numCols = 8
         numRows = 7
@@ -953,10 +992,13 @@ def writeFile(path, contents):
         f.write(contents)
 
 def emptyHighScores():
+    # Generates empty base contents for highscore text file.
     oneLine = "---@0\n"
     return oneLine * 10
 
 def tokenizeHighScores(highScoreList):
+    # takes 2d list contents of highscore and combines each of the names and
+    #   and scores into a readable/writeable format as: [name]@[score]
     result=''
     for nameAndScore in highScoreList:
         result += nameAndScore[0] + '@' + str(nameAndScore[1]) + '\n'
