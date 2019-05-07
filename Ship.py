@@ -16,9 +16,9 @@ class Ship(pygame.sprite.Sprite):
         # Ship image from https://www.kisspng.com/
         #   png-galaga-galaxian-golden-age-of-arcade-video-games-a-1052746/
         #   download-png.html
+        # Nyan cat originally by Christopher Torres (prguitarman) www.nyan.cat
+        # Android from: https://imgur.com/gallery/nwQPM
         Ship.imageDict = {}
-        # Ship.image = pygame.image.load(os.path.join("Photos",
-        #                                          "ship.png")).convert_alpha()
         # Width/height ratio used to scale ship based primarily on width
         # but maintain aspect ratio
 
