@@ -1,4 +1,6 @@
-# Singing Space Invaders by Joseph Sandler for 15-112 Term Project S19
+# Singing Space Invaders 
+## sandlerj
+### Originally for 15-112 Term Project S19
 
 A remake of the arcade classic Space Invaders where all bullet firing is controlled by pitch detection of notes sing by the player.
 Has Easy and Hard Modes, as well as Gyruss mode based on the Japanese arcade game 'Gyruss'.
