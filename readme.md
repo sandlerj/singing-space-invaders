@@ -6,7 +6,7 @@ Has Easy and Hard Modes, as well as Gyruss mode based on the Japanese arcade gam
 Start the game by running the file 'SingingSpaceInvaders.py'. Game should run automatically. Alternateively, use
 SingingSpaceInvaders().run()
 
-Libraries needed: 
+Libraries needed (uses module_manager by Austin Schick in case you don't have these installed): 
 * pygame
 * pyaudio
 * aubio.
