@@ -1,4 +1,4 @@
-Singing Space Invaders by Joseph Sandler for 15-112 Term Project S19
+# Singing Space Invaders by Joseph Sandler for 15-112 Term Project S19
 
 A remake of the arcade classic Space Invaders where all bullet firing is controlled by pitch detection of notes sing by the player.
 Has Easy and Hard Modes, as well as Gyruss mode based on the Japanese arcade game 'Gyruss'.
@@ -6,8 +6,11 @@ Has Easy and Hard Modes, as well as Gyruss mode based on the Japanese arcade gam
 Start the game by running the file 'SingingSpaceInvaders.py'. Game should run automatically. Alternateively, use
 SingingSpaceInvaders().run()
 
-Libraries needed: pygame, pyaudio, aubio.
+Libraries needed: 
+* pygame
+* pyaudio
+* aubio.
 
 Key shortcuts in game:
-x - End game immediately
-z - kill all aliens in current stage.
+* x - End game immediately
+* z - kill all aliens in current stage.
