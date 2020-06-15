@@ -9,7 +9,7 @@ SingingSpaceInvaders().run()
 Hardware required:
 * A microphone
 
-Dependencies (should be auto-installed using module_manager by Austin Schick[https://github.com/schickmeister] in case you don't have these installed): 
+Dependencies (should be auto-installed using module_manager by [Austin Schick](https://github.com/schickmeister) in case you don't have these installed): 
 * pygame
 * pyaudio
 * aubio
