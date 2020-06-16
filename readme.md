@@ -3,8 +3,8 @@
 A remake of the arcade classic Space Invaders where all bullet firing is controlled by pitch detection of notes sing by the player.
 Has Easy and Hard Modes, as well as Gyruss mode based on the Japanese arcade game 'Gyruss'.
 
-Start the game by running the file 'SingingSpaceInvaders.py'. Game should run automatically. Alternateively, use
-SingingSpaceInvaders().run()
+Start the game by running the file 'main.py'. Game should run automatically. Alternateively, use
+main().run() with the file imported in the interpreter.
 
 Hardware required:
 * A microphone
