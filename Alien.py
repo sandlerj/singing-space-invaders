@@ -1,4 +1,3 @@
-## Joseph Sandler jsandler Section B
 ## Alien Class for Singing Space Invaders
 """
 Alien sprite images originally designed by Tomohiro Nishikado for game Space
