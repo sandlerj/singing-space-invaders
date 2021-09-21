@@ -1,5 +1,3 @@
-#Joseph Sandler, jsandler, Section B
-
 import pygame, os, copy, math
 from numpy import real
 #Bullet sprite and subclasee PitchBullet
