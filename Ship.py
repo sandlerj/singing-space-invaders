@@ -1,4 +1,3 @@
-#Joseph Sandler, jsandler, Section B
 ## The Ship Sprite
 #Made with minimal references to Lukas Peraza's pygame templates;
 # HOWEVER, not at all directly copied or using his GameObject
