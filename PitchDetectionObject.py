@@ -1,4 +1,3 @@
-#Joseph Sandler, jsandler, Section B
 import pyaudio, aubio, numpy, os
 """
 Pitch detection object set up using pyaudio for an input stream via callback
