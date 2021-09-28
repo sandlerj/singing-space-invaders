@@ -21,4 +21,6 @@ Key shortcuts in game:
 * x - End game immediately
 * z - kill all aliens in current stage.
 
-#### Originally for 15-112 Term Project S19
+#### Originally for 15-112 Capstone Project S19
+
+[Demo Video](https://www.youtube.com/watch?v=m7l1t6fTZvE) - _This video was recorded quite some time ago. Please excuse the very low sounding speaking voice._
